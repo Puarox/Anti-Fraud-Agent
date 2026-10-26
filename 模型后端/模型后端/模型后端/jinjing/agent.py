@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 import sqlite3
+from copy import deepcopy
 from pathlib import Path
 from typing import Literal, Protocol, TypedDict
 
@@ -148,6 +149,7 @@ class InvestigationState(TypedDict, total=False):
     budget_used: int
     status: str
     report: dict
+    trace: list[dict]
 
 
 class Investigator:
@@ -155,6 +157,7 @@ class Investigator:
 
     def __init__(self, planner: Planner, checkpoint_path: Path | None = None) -> None:
         self.planner = planner
+        self.progress_callback = None
         path = checkpoint_path or BASE_DIR / "agent_checkpoints.sqlite"
         path.parent.mkdir(parents=True, exist_ok=True)
         self.connection = sqlite3.connect(path, check_same_thread=False)
@@ -184,7 +187,10 @@ class Investigator:
         try:
             decision = self.planner.decide(view)
         except (ValueError, ValidationError, OSError) as exc:
+            event = {"kind": "planner_error", "status": "NEEDS_REVIEW", "reason": type(exc).__name__}
+            self._notify(event)
             return {"status": "NEEDS_REVIEW", "pending": {"action": "FINISH"},
+                    "trace": state.get("trace", []) + [event],
                     "observations": state.get("observations", []) + [{
                         "tool": "planner", "status": "ERROR", "reason": type(exc).__name__}]}
         item = decision.model_dump()
@@ -192,13 +198,25 @@ class Investigator:
             for key in ("query", "hypothesis", "reason"):
                 assert_redacted(item[key])
         except ValueError:
+            event = {"kind": "planner_error", "status": "NEEDS_REVIEW", "reason": "PII_BLOCKED"}
+            self._notify(event)
             return {"status": "NEEDS_REVIEW", "pending": {"action": "FINISH"},
+                    "trace": state.get("trace", []) + [event],
                     "observations": state.get("observations", []) + [{
                         "tool": "planner", "status": "PII_BLOCKED"}]}
         decisions = state.get("decisions", []) + [item]
+        event = {"kind": "plan", "action": item["action"], "query": item["query"],
+                 "hypothesis": item["hypothesis"], "reason": item["reason"]}
+        self._notify(event)
+        trace = state.get("trace", []) + [event]
         if decision.action == "ASK_USER":
-            return {"decisions": decisions, "pending": item, "status": "NEEDS_INPUT"}
-        return {"decisions": decisions, "pending": item}
+            return {"decisions": decisions, "pending": item, "status": "NEEDS_INPUT", "trace": trace}
+        return {"decisions": decisions, "pending": item, "trace": trace}
+
+    def _notify(self, event: dict) -> None:
+        callback = self.progress_callback
+        if callback is not None:
+            callback(deepcopy(event))
 
     @staticmethod
     def _route(state: InvestigationState) -> str:
@@ -228,8 +246,30 @@ class Investigator:
         else:
             observation = {"tool": action, "status": "ERROR", "signature": signature,
                            "reason": "Action is not allowlisted"}
+        event = self._trace_observation(observation)
+        self._notify(event)
         return {"observations": state.get("observations", []) + [observation],
+                "trace": state.get("trace", []) + [event],
                 "budget_used": state.get("budget_used", 0) + 1}
+
+    @staticmethod
+    def _trace_observation(observation: dict) -> dict:
+        event = {"kind": "observation", "tool": observation.get("tool"),
+                 "status": observation.get("status")}
+        result = observation.get("result", {})
+        if observation.get("tool") == "SEARCH_KNOWLEDGE":
+            results = result.get("results", [])
+            event["summary"] = f"检索到 {len(results)} 条资料"
+            event["items"] = [item.get("title", "") for item in results[:3]]
+        elif observation.get("tool") == "CHECK_URL":
+            event["summary"] = f"网址状态：{result.get('status', 'UNKNOWN')} · {result.get('reason', '')}"
+        elif observation.get("tool") == "REVIEW_FORENSICS":
+            event["summary"] = (f"来源 {result.get('provenance', {}).get('status', 'UNKNOWN')}；"
+                                f"语音 {result.get('audio', {}).get('status', 'UNKNOWN')}；"
+                                f"视频 {result.get('video', {}).get('status', 'UNKNOWN')}")
+        else:
+            event["summary"] = observation.get("reason", "工具返回观察")
+        return event
 
     @staticmethod
     def _report(state: InvestigationState) -> dict:
@@ -256,6 +296,7 @@ class Investigator:
             "open_question": state["pending"].get("query") if status == "NEEDS_INPUT" else None,
             "tool_observations": state.get("observations", []),
             "decisions": state.get("decisions", []),
+            "trace": state.get("trace", []),
             "budget_used": state.get("budget_used", 0),
         }
         return {"report": report, "status": status}
@@ -277,7 +318,7 @@ class Investigator:
             "status": "ACTIVE", "pending": {}, "report": {},
         }
         if not previous:
-            state.update({"observations": [], "decisions": [], "budget_used": 0})
+            state.update({"observations": [], "decisions": [], "trace": [], "budget_used": 0})
         elif previous.get("facts") != manifest["observations"]:
             state["budget_used"] = 0
         return self.graph.invoke(state, config)["report"]

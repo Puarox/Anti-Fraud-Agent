@@ -15,7 +15,7 @@ def main() -> None:
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.goto("http://127.0.0.1:5050/", wait_until="networkidle")
             page.locator("#text").fill("对方让我转账到安全账户，联系13800138000")
-            page.get_by_role("button", name="本机提取证据").click()
+            page.get_by_role("button", name="创建案件").click()
             page.wait_for_url("**/cases/*", timeout=120000)
             page.wait_for_load_state("networkidle")
             content = page.content()
@@ -25,8 +25,18 @@ def main() -> None:
             assert "CRITICAL" in content
             assert not errors, errors
             screenshot.parent.mkdir(parents=True, exist_ok=True)
+            page.goto("http://127.0.0.1:5050/", wait_until="networkidle")
+            page.get_by_role("button", name="运行一键演示").click()
+            page.wait_for_selector("#demo-trace .trace-event", timeout=240000)
+            page.wait_for_function(
+                "document.querySelector('#demo-state').textContent === '调查完成'",
+                timeout=240000,
+            )
+            assert page.locator("#demo-trace .trace-event.plan").count() >= 1
+            assert page.locator("#demo-trace .trace-event.observation").count() >= 1
+            assert not errors, errors
             page.screenshot(path=str(screenshot), full_page=True)
-            print(f"PASS {page.url} screenshot={screenshot}")
+            print(f"PASS one-click agent trace screenshot={screenshot}")
         finally:
             browser.close()
 

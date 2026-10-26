@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>案件调查 · 金睛鉴诈</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='workbench.css') }}">
+  <script defer src="{{ url_for('static', filename='workbench.js') }}"></script>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="tool-rail">
+    <a class="brand" href="/"><span class="brand-mark">J</span><span><b>金睛鉴诈</b><small>AGENT INVESTIGATION DESK</small></span></a>
+    <div class="rail-heading"><span>工具箱</span><span class="rail-count">{{ tools|length }} 已配置</span></div>
+    <div class="tool-list">
+      {% for tool in tools %}<article class="tool-card"><div class="tool-card-top"><span class="tool-glyph">{{ loop.index|string }}</span><span class="tool-kind">{{ tool.kind }}</span></div><h3>{{ tool.name }}</h3><p>{{ tool.description }}</p><small>{{ tool.availability }}</small></article>{% endfor %}
+    </div>
+    <div class="rail-foot"><span class="local-pulse"></span> 所有案件在本机处理</div>
+  </aside>
+  <main class="workspace">
+    <header class="topbar"><div class="crumb"><a href="/">调查工作台</a> <span>/</span> 案件详情</div><div class="local-label"><i></i> LOCAL WORKSPACE</div></header>
+    <section class="case-header">
+      <div><div class="eyebrow"><span class="eyebrow-line"></span> CASE FILE · {{ d.media_type|upper }}</div><h1>案件调查</h1><div class="case-meta"><span>{{ d.case_id }}</span><span>{{ '含媒体证据' if d.media_sha256 else '文字线索' }}</span>{% if d.media_sha256 %}<span>SHA-256 {{ d.media_sha256[:16] }}…</span>{% endif %}</div></div>
+      <div class="case-head-badge">风险仅作提示 · 需结合事实复核</div>
+    </section>
+
+    <div class="case-layout">
+      <div class="case-column">
+        <section class="panel">
+          <div class="panel-heading"><h2>案件线索</h2><small>已去敏 · 本机保存</small></div>
+          <div class="case-facts">{{ d.text or '未提供文字说明' }}</div>
+          <div class="tool-status-row" style="margin-top:12px">{% for name,status in d.tool_status.items() %}<span>{{ name }} · {{ status }}</span>{% endfor %}</div>
+          {% if d.asr_note %}<p class="notice">语音识别状态：{{ d.asr_note }}</p>{% endif %}
+        </section>
+        <section class="panel">
+          <div class="panel-heading"><h2>证据片段</h2><small>{{ d.observations|length }} 条 · 可回查</small></div>
+          {% for o in d.observations %}<div class="evidence-row"><span class="ev-id">{{ o.evidence_id }}</span><div class="ev-copy"><span class="ev-meta">{{ o.type|upper }}{% if o.at_ms is defined %} · {{ o.at_ms }} ms{% elif o.start_ms is defined %} · {{ o.start_ms }}–{{ o.end_ms }} ms{% endif %}{% if o.confidence is defined %} · OCR {{ o.confidence }}{% endif %}</span>{{ o.text }}{% if o.bbox is defined %}<span class="ev-meta">画面框 {{ o.bbox }}</span>{% endif %}</div></div>{% else %}<p class="trace-empty">暂无可提取的文字证据。</p>{% endfor %}
+        </section>
+        <section class="panel">
+          <div class="panel-heading"><h2>风险信号</h2><span class="risk-level">{{ d.risk_indicators.level }}</span></div>
+          <p class="ev-meta">规则用于提醒；没有命中当前规则不能证明安全。</p>
+          {% for hit in d.risk_indicators.hits %}<div class="source-item"><strong>{{ hit.rule_id }}</strong><p>{{ hit.matched_text }} · 证据 {{ hit.evidence_ids|join(', ') }}</p><p>{{ hit.advice }}</p></div>{% else %}<p class="ev-copy">未命中已配置规则。继续结合原始情境核验。</p>{% endfor %}
+        </section>
+        <section class="panel">
+          <div class="panel-heading"><h2>权威资料</h2><small>{{ d.knowledge.mode }}</small></div>
+          {% for k in d.knowledge.results %}<div class="source-item"><a href="{{ k.source_url }}" target="_blank" rel="noopener noreferrer">{{ k.title }} ↗</a><p>{{ k.summary }}</p><span class="source-meta">{{ k.doc_id }} · 发布 {{ k.published_at }} · 复核 {{ k.reviewed_at }}</span></div>{% else %}<p class="ev-copy">当前没有命中资料。</p>{% endfor %}
+        </section>
+        {% if d.url_checks %}<section class="panel"><div class="panel-heading"><h2>网址核验</h2><small>离线规则 · 无实时信誉源</small></div>{% for u in d.url_checks %}<div class="signal-line"><span>{{ u.host or '无效网址' }}</span><strong>{{ u.status }}</strong></div>{% endfor %}</section>{% endif %}
+        <section class="panel">
+          <div class="panel-heading"><h2>媒体真实性信号</h2><small>诈骗行为与媒体伪造分开判断</small></div>
+          <p class="signal-note">真实性：{{ d.forensics.authenticity }}。缺少 C2PA 凭证不代表伪造，模型原始分数也不是概率。</p>
+          {% if d.forensics.provenance is defined %}<div class="signal-line"><span>C2PA 来源凭证</span><strong>{{ d.forensics.provenance.status }}</strong></div>{% endif %}
+          {% if d.forensics.quality is defined %}<div class="signal-line"><span>媒体质量 · {{ d.forensics.quality.duration_s or 0 }} 秒</span><strong>{{ d.forensics.quality.status }}</strong></div>{% endif %}
+          {% if d.forensics.audio is defined %}<div class="signal-line"><span>AASIST 语音实验信号{% if d.forensics.audio.bonafide_logit is defined %} · {{ d.forensics.audio.bonafide_logit }}{% endif %}</span><strong>{{ d.forensics.audio.status }}</strong></div>{% endif %}
+          {% if d.forensics.video is defined %}<div class="signal-line"><span>DFDS 视频人脸实验信号</span><strong>{{ d.forensics.video.status }}</strong></div>{% for f in d.forensics.video.frames or [] %}<div class="source-meta">{{ f.at_ms }} ms · face {{ f.face_bbox }} · raw score {{ f.raw_fake_softmax }}</div>{% endfor %}{% endif %}
+        </section>
+        {% if d.previews %}<section class="panel"><div class="panel-heading"><h2>本机脱敏预览</h2><small>分享前请人工检查</small></div><div class="preview-grid">{% for p in d.previews %}<a href="{{ url_for('preview',case_id=d.case_id,filename=p.file) }}"><img src="{{ url_for('preview',case_id=d.case_id,filename=p.file) }}" alt="{{ p.at_ms }} 毫秒"></a>{% endfor %}</div><p class="notice">{{ d.privacy_notice }}</p></section>{% endif %}
+      </div>
+
+      <div class="case-column">
+        <section class="panel case-trace-panel">
+          <div class="panel-heading"><div><h2>Agent 调查轨迹</h2><small>感知 → 规划 → 调用 → 观察 → 再规划</small></div><span class="trace-live-tag">LIVE TRACE</span></div>
+          <div id="agent-trace" class="trace-list" aria-live="polite">
+            {% if report and not d.report_stale %}{% for event in report.trace %}<div class="trace-event {{ event.kind }}"><span class="trace-node">{{ '↗' if event.kind == 'plan' else '◉' }}</span><div class="trace-body"><div class="trace-topline"><span class="trace-title">{{ event.action or event.tool or '规划器' }}</span><span class="trace-kind">{{ 'PLAN' if event.kind == 'plan' else 'OBSERVE' }}</span>{% if event.status %}<span class="trace-kind">{{ event.status }}</span>{% endif %}</div>{% if event.reason %}<p>{{ event.reason }}</p>{% endif %}{% if event.hypothesis %}<p>待核实假设：{{ event.hypothesis }}</p>{% endif %}{% if event.query %}<p class="trace-query">{{ event.query }}</p>{% endif %}{% if event.summary %}<p>{{ event.summary }}</p>{% endif %}{% for item in event.items or [] %}<span class="trace-chip">{{ item }}</span>{% endfor %}</div></div>{% endfor %}
+            {% else %}<div class="trace-empty"><span class="empty-spark">✳</span><p>{{ '新线索已到，重新启动调查以更新轨迹。' if d.report_stale else 'Agent 尚未启动' }}</p><small>每项行动都会留下计划和工具观察</small></div>{% endif %}
+          </div>
+          <div class="panel" style="border:0;border-top:1px solid var(--line);border-radius:0;margin:0">
+            {% if report and not d.report_stale %}<div class="signal-line"><span>调查状态</span><strong>{{ report.status }}</strong></div><div class="signal-line"><span>行为风险</span><strong>{{ report.fraud_risk.level }}</strong></div><div class="signal-line"><span>媒体真实性</span><strong>{{ report.media_authenticity.state }}</strong></div><p class="ev-meta">Planner · {{ report.planner_model }}</p>{% if not d.report_stale %}<a class="trace-kind" href="{{ url_for('report_json',case_id=d.case_id) }}">下载可复查 JSON 报告 ↓</a>{% endif %}{% if report.open_question %}<div class="question-box"><b>Agent 补问</b><br>{{ report.open_question }}</div>{% endif %}{% endif %}
+            <form id="investigation-form" method="post" action="{{ url_for('investigate_form',case_id=d.case_id) }}"><button type="submit" class="button button-dark" {% if report and not d.report_stale %}disabled{% endif %}>{{ '调查已完成' if report and not d.report_stale else '启动 Agent 调查' }} <b>→</b></button><p>最多 4 次只读工具调用；遇到新信息会沿 Checkpoint 续查。</p></form>
+            <p id="investigation-status" class="job-status" role="status"></p>
+            {% if d.report_stale %}<p class="notice">补充了新事实，当前报告已过期。重新调查会读取新增证据。</p>{% endif %}
+          </div>
+        </section>
+        <section class="panel"><div class="panel-heading"><h2>补充观察</h2><small>会触发新一轮规划</small></div><form class="reply-form" method="post" action="{{ url_for('reply_form',case_id=d.case_id) }}"><textarea name="text" placeholder="例如：我尚未转账；对方拒绝通过原号码回拨。"></textarea><button class="button button-accent" type="submit">保存新事实 <b>＋</b></button></form></section>
+      </div>
+    </div>
+    <footer class="page-foot"><span>金睛鉴诈 · 本地调查工作台</span><span>媒体伪造分数不构成真伪结论</span></footer>
+  </main>
+</div>
+</body>
+</html>

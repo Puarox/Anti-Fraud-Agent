@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>金睛鉴诈 · Agent 调查台</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='workbench.css') }}">
+  <script defer src="{{ url_for('static', filename='workbench.js') }}"></script>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="tool-rail">
+    <a class="brand" href="/"><span class="brand-mark">J</span><span><b>金睛鉴诈</b><small>AGENT INVESTIGATION DESK</small></span></a>
+    <div class="rail-heading"><span>工具箱</span><span class="rail-count">{{ tools|length }} 已配置</span></div>
+    <div class="tool-list">
+      {% for tool in tools %}
+      <article class="tool-card">
+        <div class="tool-card-top"><span class="tool-glyph">{{ loop.index|string }}</span><span class="tool-kind">{{ tool.kind }}</span></div>
+        <h3>{{ tool.name }}</h3><p>{{ tool.description }}</p><small>{{ tool.availability }}</small>
+      </article>
+      {% endfor %}
+    </div>
+    <div class="rail-foot"><span class="local-pulse"></span> 所有案件在本机处理</div>
+  </aside>
+
+  <main class="workspace">
+    <header class="topbar"><div class="crumb">反诈公共服务 <span>/</span> 调查工作台</div><div class="local-label"><i></i> LOCAL WORKSPACE</div></header>
+    <section class="hero">
+      <div class="hero-copy"><div class="eyebrow"><span class="eyebrow-line"></span> 感知 · 行动 · 观察 · 再规划</div>
+        <h1>让每一步核验<br><em>都有回执。</em></h1>
+        <p>Agent 根据案件线索选择工具，读取真实结果后决定下一步。你可以逐步复查它为何行动、看到了什么。</p>
+      </div>
+      <div class="hero-stamp"><div class="stamp-ring"><span>4</span><small>TOOL<br>CALL LIMIT</small></div><p>有限预算 · 只读核验<br>关键事实留痕</p></div>
+      <div class="hero-watermark">TRACE</div>
+    </section>
+
+    <section class="demo-band">
+      <div class="demo-intro"><div class="demo-kicker"><span class="live-dot"></span> LIVE AGENT DEMO</div>
+        <h2>看 Agent 如何<br>沿着证据往下查。</h2>
+        <p>一键载入合成的“客服退款 + 屏幕共享 + 验证码”案例。工具轨迹由本机模型现场生成，不是录好的脚本。</p>
+        <button id="demo-button" class="button button-accent"><span>运行一键演示</span><b>↗</b></button>
+        <p class="micro-note">演示不会联系任何人或访问可疑网址。</p>
+      </div>
+      <div class="trace-preview">
+        <div class="trace-preview-head"><span>调查轨迹</span><span id="demo-state" class="state-pill">等待启动</span></div>
+        <div id="demo-trace" class="trace-list trace-list-compact" aria-live="polite">
+          <div class="trace-empty"><span class="empty-spark">✳</span><p>启动后，这里会实时显示</p><small>规划 → 工具调用 → 观察 → 再规划</small></div>
+        </div>
+        <div class="trace-bottom"><span>本机 Qwen Planner</span><span class="trace-budget">预算上限 4 次调用</span></div>
+      </div>
+    </section>
+
+    <div class="section-heading"><div><span class="section-index">01</span><h2>开始一项调查</h2></div><span>输入文字，或附上截图 / 音频 / 视频</span></div>
+    <section class="intake-grid">
+      <form id="case-form" class="intake-card" enctype="multipart/form-data">
+        <label for="text">描述你遇到的情况</label>
+        <textarea id="text" name="text" placeholder="对方自称是谁？要求你做什么？有没有催促转账、验证码或共享屏幕？"></textarea>
+        <div class="upload-row"><label class="upload-button" for="media"><span class="upload-icon">＋</span><span><b>添加媒体证据</b><small>图片、音频或视频 · 最大 50 MB</small></span></label><input id="media" name="media" type="file" accept="image/*,audio/*,video/*"><span id="file-name" class="file-name">未选择文件</span></div>
+        <div class="intake-footer"><span>先在本机提取证据，再进入 Agent 调查。</span><button class="button button-dark" type="submit">创建案件 <b>→</b></button></div>
+        <p id="job-status" class="job-status" role="status"></p>
+      </form>
+      <aside class="privacy-card"><div class="privacy-icon">⌑</div><span class="overline">LOCAL FIRST</span><h3>原始媒体留在本机</h3><p>手机号、证件号和邮箱先做本机去敏。自动遮挡可能漏掉姓名或人脸，请检查预览后再分享。</p><div class="privacy-rule"></div><span class="privacy-foot">媒体不会发送到云端模型</span></aside>
+    </section>
+    <footer class="page-foot"><span>金睛鉴诈 · 可复查的公共反诈助手</span><span>风险提示不等于最终诈骗认定</span></footer>
+  </main>
+</div>
+</body>
+</html>

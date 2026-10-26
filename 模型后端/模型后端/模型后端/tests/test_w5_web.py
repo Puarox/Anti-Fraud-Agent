@@ -43,7 +43,9 @@ class AsyncWorkbenchTest(unittest.TestCase):
                 time.sleep(0.05)
             else:
                 self.fail("Investigation job timed out")
-            worker.assert_called_once_with(case["case_id"])
+            worker.assert_called_once()
+            self.assertEqual(worker.call_args.args[0], case["case_id"])
+            self.assertEqual(worker.call_args.args[1], submitted.json["job_id"])
 
 
 if __name__ == "__main__":
