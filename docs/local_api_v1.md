@@ -16,4 +16,6 @@
 - `POST /api/cases/{case_id}/reply`：JSON `{"text":"补充事实"}`，在本机去敏并追加证据，旧报告标记为过期。
 - `GET /api/cases/{case_id}/report`：下载调查 JSON；旧报告过期时返回 HTTP 409。
 
+调查报告可选包含 `metrics`：规划调用数、只读工具调用数、规划/工具累计阶段耗时、工具错误数、Planner 错误数和自动重试数。单次调查的工具观察包含 `contract_version`、工具状态、来源及来源版本、证据编号、观察时间、限制说明、错误码和步骤耗时。耗时只计本地规划/工具阶段，不是端到端 P95；当前自动重试数为 0。
+
 `forensics.authenticity` 当前为 `UNKNOWN`。`audio.bonafide_logit` 和 `video.frames[].raw_fake_softmax` 是实验原始信号，不能转述为真伪概率或诈骗结论。手机接入时，手机上传原件到服务端不属于设备本地处理；需单独设计设备侧去敏与明确授权。当前本机 Web 是手机调试替代入口。

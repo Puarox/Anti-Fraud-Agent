@@ -57,6 +57,9 @@ class AsyncWorkbenchTest(unittest.TestCase):
             "fraud_risk": {"level": "HIGH"},
             "media_authenticity": {"state": "UNKNOWN"},
             "open_question": None,
+            "budget_used": 2,
+            "metrics": {"planner_calls": 3, "tool_calls": 2,
+                        "planner_latency_ms": 5, "tool_latency_ms": 1},
             "trace": [
                 {"kind": "plan", "action": "SEARCH_KNOWLEDGE", "query": "客服退款"},
                 {"kind": "observation", "tool": "SEARCH_KNOWLEDGE", "status": "HIT",
@@ -69,6 +72,8 @@ class AsyncWorkbenchTest(unittest.TestCase):
         self.assertEqual(page.status_code, 200)
         self.assertIn("SEARCH_KNOWLEDGE".encode(), page.data)
         self.assertIn("官方反诈指南".encode(), page.data)
+        self.assertIn("3 / 2".encode(), page.data)
+        self.assertIn("5 / 1 ms".encode(), page.data)
 
 
 if __name__ == "__main__":

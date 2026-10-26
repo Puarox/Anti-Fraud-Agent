@@ -73,6 +73,10 @@ class AASISTProbe:
     """Runs the authors' checkpoint. Scores are intentionally not calibrated as probabilities."""
 
     def __init__(self) -> None:
+        self.model = None
+        self.version = "clovaai/aasist ASVspoof2019-LA checkpoint"
+
+    def _load_model(self) -> None:
         import torch
         config = json.loads((AASIST_REPO / "config" / "AASIST.conf").read_text(encoding="utf-8"))
         module_path = AASIST_REPO / "models" / "AASIST.py"
@@ -84,7 +88,6 @@ class AASISTProbe:
         weights = AASIST_REPO / "models" / "weights" / "AASIST.pth"
         self.model.load_state_dict(torch.load(weights, map_location="cpu", weights_only=True))
         self.model.eval()
-        self.version = "clovaai/aasist ASVspoof2019-LA checkpoint"
 
     def score(self, path: Path, start_s: float = 0) -> dict:
         import torch
@@ -99,6 +102,8 @@ class AASISTProbe:
             return {"status": "UNKNOWN", "reason": "less_than_two_seconds_of_audio"}
         if float(np.sqrt(np.mean(samples * samples))) < 0.001:
             return {"status": "UNKNOWN", "reason": "near_silent_audio"}
+        if self.model is None:
+            self._load_model()
         size = 64600
         if len(samples) < size:
             samples = np.tile(samples, int(size / len(samples)) + 1)[:size]

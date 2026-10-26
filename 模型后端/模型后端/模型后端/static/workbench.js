@@ -39,6 +39,11 @@
       if (event.reason) body.append(el("p", "", event.reason));
       if (event.hypothesis) body.append(el("p", "", `待核实假设：${event.hypothesis}`));
       if (event.summary) body.append(el("p", "", event.summary));
+      if (event.latency_ms !== undefined) {
+        const evidence = Array.isArray(event.evidence_ids) && event.evidence_ids.length
+          ? ` · 证据 ${event.evidence_ids.join(", ")}` : "";
+        body.append(el("p", "trace-telemetry", `耗时 ${event.latency_ms} ms${evidence}`));
+      }
       if (event.query) body.append(el("p", "trace-query", event.query));
       if (event.items && event.items.length) {
         const chips = el("div", "trace-chips");

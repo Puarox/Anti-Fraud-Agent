@@ -4,6 +4,7 @@ import tempfile
 import unittest
 import uuid
 from pathlib import Path
+from unittest.mock import patch
 
 from jinjing.agent import Decision, Investigator
 from local_web import app
@@ -53,6 +54,18 @@ class LeakyPlanner:
         return Decision(action="ASK_USER", query="拨打13800138000确认")
 
 
+class ErrorFallbackPlanner:
+    def decide(self, view):
+        observations = view["tool_observations"]
+        if not observations:
+            self.first_available_tools = {tool["name"] for tool in view["available_tools"]}
+            return Decision(action="SEARCH_KNOWLEDGE", query="客服退款")
+        if observations[-1]["status"] == "ERROR":
+            self.next_available_tools = {tool["name"] for tool in view["available_tools"]}
+            return Decision(action="CHECK_URL", query="https://www.cac.gov.cn/article")
+        return Decision(action="FINISH")
+
+
 def manifest():
     return {
         "case_id": str(uuid.uuid4()),
@@ -73,6 +86,32 @@ class AgentGraphTest(unittest.TestCase):
         self.assertEqual([x["tool"] for x in report["tool_observations"]],
                          ["SEARCH_KNOWLEDGE", "CHECK_URL"])
         self.assertEqual(len(report["fraud_risk"]["supported_hits"]), 1)
+        self.assertEqual([event["action"] for event in report["trace"] if event["kind"] == "plan"],
+                         ["SEARCH_KNOWLEDGE", "CHECK_URL", "FINISH"])
+        self.assertEqual(report["metrics"]["planner_calls"], 3)
+        self.assertEqual(report["metrics"]["tool_calls"], 2)
+        observation = report["tool_observations"][0]
+        self.assertEqual(observation["contract_version"], "1.0")
+        self.assertEqual(observation["source"], "knowledge/seed.json")
+        self.assertTrue(observation["evidence_ids"])
+        self.assertIn("observed_at", observation)
+        self.assertTrue(all("latency_ms" in event for event in report["trace"]
+                            if event["kind"] in {"plan", "observation"}))
+
+    def test_tool_error_is_observed_and_planner_chooses_fallback(self):
+        planner = ErrorFallbackPlanner()
+        with tempfile.TemporaryDirectory() as directory, \
+                patch("jinjing.agent.get_knowledge") as knowledge:
+            knowledge.return_value.search.side_effect = RuntimeError("private local traceback")
+            with Investigator(planner, Path(directory) / "state.sqlite") as agent:
+                report = agent.run(manifest())
+        self.assertEqual(report["status"], "COMPLETED")
+        self.assertEqual([item["status"] for item in report["tool_observations"]], ["ERROR", "HIT"])
+        self.assertNotIn("private local traceback", str(report))
+        self.assertEqual(report["metrics"]["tool_errors"], 1)
+        self.assertEqual(report["metrics"]["automatic_retries"], 0)
+        self.assertIn("CHECK_URL", planner.next_available_tools)
+        self.assertNotIn("SEARCH_KNOWLEDGE", planner.next_available_tools)
 
     def test_model_cannot_check_url_it_invented(self):
         with tempfile.TemporaryDirectory() as directory:

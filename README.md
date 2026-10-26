@@ -26,6 +26,9 @@ python -m unittest discover -s tests -v
 - [W3 受控调查 Agent](reports/W3-agent.md)
 - [W4 媒体取证与弃权](reports/W4-media-forensics.md)
 - [W5 集成、浏览器验证与对照烟测](reports/W5-integration-evaluation.md)
+- [W6 Agent 工程能力与岗位映射](reports/W6-agent-engineering.md)
+
+项目面试表达与 Agent JD 能力边界见 [Agent 岗位能力映射与面试表达](docs/agent-jd-playbook.md)。项目定位为隐私优先、证据可追溯的多模态反诈调查助手；Agent 是受预算和只读工具约束的单 Agent 调查循环，不宣称 Multi-Agent 或生产级准确率。
 
 后续实现以 [最终详细实施方案](../../outputs/金睛鉴诈_最终详细实施方案.md) 的阶段门槛为准。尚未完成的能力不可在演示中标记为已实现。
 
