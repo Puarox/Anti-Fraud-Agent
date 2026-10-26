@@ -1,10 +1,11 @@
 """The browser job flow must return a completed, redacted case."""
 
+import json
 import time
 import unittest
 from unittest.mock import patch
 
-from local_web import app
+from local_web import BASE_DIR, app
 
 
 class AsyncWorkbenchTest(unittest.TestCase):
@@ -46,6 +47,28 @@ class AsyncWorkbenchTest(unittest.TestCase):
             worker.assert_called_once()
             self.assertEqual(worker.call_args.args[0], case["case_id"])
             self.assertEqual(worker.call_args.args[1], submitted.json["job_id"])
+
+    def test_case_page_renders_agent_trace_with_optional_items(self):
+        client = app.test_client()
+        case = client.post("/api/cases", data={"text": "合成案件线索"}).json
+        report = {
+            "status": "COMPLETED",
+            "planner_model": "test-planner",
+            "fraud_risk": {"level": "HIGH"},
+            "media_authenticity": {"state": "UNKNOWN"},
+            "open_question": None,
+            "trace": [
+                {"kind": "plan", "action": "SEARCH_KNOWLEDGE", "query": "客服退款"},
+                {"kind": "observation", "tool": "SEARCH_KNOWLEDGE", "status": "HIT",
+                 "summary": "检索到 1 条资料", "items": ["官方反诈指南"]},
+            ],
+        }
+        report_path = BASE_DIR / case["case_id"] / "investigation.json"
+        report_path.write_text(json.dumps(report, ensure_ascii=False), encoding="utf-8")
+        page = client.get(f"/cases/{case['case_id']}")
+        self.assertEqual(page.status_code, 200)
+        self.assertIn("SEARCH_KNOWLEDGE".encode(), page.data)
+        self.assertIn("官方反诈指南".encode(), page.data)
 
 
 if __name__ == "__main__":
