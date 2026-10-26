@@ -1,0 +1,41 @@
+[
+  {
+    "doc_id": "nfra_2024_screen_ai",
+    "title": "金融监管总局：防范新型电信网络诈骗",
+    "source_url": "https://app.www.gov.cn/govdata/gov/202407/25/517630/article.html",
+    "published_at": "2024-07-25",
+    "reviewed_at": "2026-10-25",
+    "source_tier": "official",
+    "region": "CN",
+    "review_status": "SOURCE_VERIFIED",
+    "valid_until": null,
+    "text": "冒充客服或机构诱导下载软件、开启共享屏幕，可能获取账户、密码和验证码。利用换脸拟声冒充亲友或权威人士，也可能诱导转账。涉及汇款应从独立的官方渠道核实身份，拒绝陌生人的共享屏幕请求。",
+    "keywords": ["共享屏幕", "验证码", "换脸", "拟声", "转账"]
+  },
+  {
+    "doc_id": "cac_2022_high_frequency",
+    "title": "网信办转载公安提醒：五类高发电信网络诈骗",
+    "source_url": "https://www.cac.gov.cn/2022-09/15/c_1664865099681504.htm",
+    "published_at": "2022-09-15",
+    "reviewed_at": "2026-10-25",
+    "source_tier": "official",
+    "region": "CN",
+    "review_status": "SOURCE_VERIFIED",
+    "valid_until": null,
+    "text": "刷单返利通常先给小额回报再要求大额垫资；冒充客服常以退款理赔索要银行卡和验证码；冒充公检法人员要求转入所谓安全账户是典型危险信号。遇到自称客服应去原平台核实。",
+    "keywords": ["刷单", "返利", "垫资", "客服", "安全账户"]
+  },
+  {
+    "doc_id": "miit_2026_brushing",
+    "title": "信息通信行业反诈中心：警惕刷单返利",
+    "source_url": "https://fjca.miit.gov.cn/ztzl/fzzt/art/2026/art_ae26ef9cf2924c15a6208d7b38c78d33.html",
+    "published_at": "2026-07-28",
+    "reviewed_at": "2026-10-25",
+    "source_tier": "official",
+    "region": "CN",
+    "review_status": "SOURCE_VERIFIED",
+    "valid_until": null,
+    "text": "刷单返利常见过程是下载陌生任务软件、先获得小额返利、随后不断垫资充值，最后以账户异常或任务未完成为由限制提现并索要解冻费。不要向陌生私人账户垫资转账。",
+    "keywords": ["刷单", "返利", "垫资", "充值", "提现", "解冻费"]
+  }
+]

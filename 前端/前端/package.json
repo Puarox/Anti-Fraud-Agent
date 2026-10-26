@@ -1,0 +1,49 @@
+{
+  "name": "deeputy",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fluentui/react-components": "^9.72.9",
+    "@fluentui/react-datepicker-compat": "^0.6.21",
+    "@rolldown/binding-win32-x64-msvc": "^1.0.0-beta.59",
+    "@xyflow/react": "^12.10.0",
+    "antd": "^6.1.4",
+    "axios": "^1.13.2",
+    "clsx": "^2.1.1",
+    "dayjs": "^1.11.19",
+    "echarts": "^6.0.0",
+    "framer-motion": "^12.25.0",
+    "install": "^0.13.0",
+    "js-sha256": "^0.11.1",
+    "marked": "^17.0.1",
+    "npm": "^11.7.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router": "^7.11.0",
+    "react-window": "^2.2.3",
+    "socket.io-client": "^2.4.0",
+    "zustand": "^5.0.9"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.9.6",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@types/react-window": "^1.8.8",
+    "@types/socket.io-client": "^1.4.36",
+    "@vitejs/plugin-react-swc": "^4.2.2",
+    "globals": "^16.5.0",
+    "typescript": "~5.9.3",
+    "vite": "npm:rolldown-vite@7.2.5"
+  },
+  "overrides": {
+    "vite": "npm:rolldown-vite@7.2.5"
+  }
+}

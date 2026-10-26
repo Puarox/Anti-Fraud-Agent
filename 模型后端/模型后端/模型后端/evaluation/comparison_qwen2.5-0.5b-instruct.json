@@ -1,0 +1,90 @@
+{
+  "model": "F:\\intern2026\\agent\\jinjing-work\\models\\qwen2.5-0.5b-instruct",
+  "case_count": 6,
+  "fixed_acceptable": 2,
+  "agent_acceptable": 3,
+  "note": "Exploratory hand-written action smoke test; no population accuracy claim",
+  "results": [
+    {
+      "case": "safe_account",
+      "acceptable": [
+        "SEARCH_KNOWLEDGE"
+      ],
+      "fixed_first_action": "SEARCH_KNOWLEDGE",
+      "fixed_acceptable": true,
+      "agent_action": "ASK_USER",
+      "agent_acceptable": false,
+      "reason": "0.5B 本地模型选择动作；尚无可靠开放式假设规划",
+      "error": null,
+      "latency_s": 8.15
+    },
+    {
+      "case": "bare_link",
+      "acceptable": [
+        "ASK_USER",
+        "CHECK_URL"
+      ],
+      "fixed_first_action": "SEARCH_KNOWLEDGE",
+      "fixed_acceptable": false,
+      "agent_action": "CHECK_URL",
+      "agent_acceptable": true,
+      "reason": "0.5B 本地模型选择动作；尚无可靠开放式假设规划",
+      "error": null,
+      "latency_s": 1.3
+    },
+    {
+      "case": "vague_request",
+      "acceptable": [
+        "ASK_USER"
+      ],
+      "fixed_first_action": "SEARCH_KNOWLEDGE",
+      "fixed_acceptable": false,
+      "agent_action": "ASK_USER",
+      "agent_acceptable": true,
+      "reason": "0.5B 本地模型选择动作；尚无可靠开放式假设规划",
+      "error": null,
+      "latency_s": 1.16
+    },
+    {
+      "case": "video_claim",
+      "acceptable": [
+        "REVIEW_FORENSICS",
+        "SEARCH_KNOWLEDGE"
+      ],
+      "fixed_first_action": "SEARCH_KNOWLEDGE",
+      "fixed_acceptable": true,
+      "agent_action": "ASK_USER",
+      "agent_acceptable": false,
+      "reason": "0.5B 本地模型选择动作；尚无可靠开放式假设规划",
+      "error": null,
+      "latency_s": 1.24
+    },
+    {
+      "case": "audio_unknown",
+      "acceptable": [
+        "ASK_USER"
+      ],
+      "fixed_first_action": "SEARCH_KNOWLEDGE",
+      "fixed_acceptable": false,
+      "agent_action": "ASK_USER",
+      "agent_acceptable": true,
+      "reason": "0.5B 本地模型选择动作；尚无可靠开放式假设规划",
+      "error": null,
+      "latency_s": 1.23
+    },
+    {
+      "case": "after_search",
+      "acceptable": [
+        "ASK_USER",
+        "FINISH"
+      ],
+      "fixed_first_action": "SEARCH_KNOWLEDGE",
+      "fixed_acceptable": false,
+      "agent_action": null,
+      "agent_acceptable": false,
+      "reason": null,
+      "error": "ValueError",
+      "latency_s": 1.15
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "model": "F:\\intern2026\\agent\\jinjing-work\\models\\qwen2.5-1.5b-instruct",
+  "case_count": 6,
+  "fixed_acceptable": 2,
+  "agent_acceptable": 3,
+  "note": "Exploratory hand-written action smoke test; no population accuracy claim",
+  "results": [
+    {
+      "case": "safe_account",
+      "acceptable": [
+        "SEARCH_KNOWLEDGE"
+      ],
+      "fixed_first_action": "SEARCH_KNOWLEDGE",
+      "fixed_acceptable": true,
+      "agent_action": "SEARCH_KNOWLEDGE",
+      "agent_acceptable": true,
+      "reason": "当前案件状态显示风险级别为'CRITICAL',且用户提到自称公安要他们转账到安全账户，这是典型的电信网络诈骗手段",
+      "error": null,
+      "latency_s": 20.15
+    },
+    {
+      "case": "bare_link",
+      "acceptable": [
+        "ASK_USER",
+        "CHECK_URL"
+      ],
+      "fixed_first_action": "SEARCH_KNOWLEDGE",
+      "fixed_acceptable": false,
+      "agent_action": "CHECK_URL",
+      "agent_acceptable": true,
+      "reason": "确认网址的真实性对于判断案件状态至关重要",
+      "error": null,
+      "latency_s": 12.05
+    },
+    {
+      "case": "vague_request",
+      "acceptable": [
+        "ASK_USER"
+      ],
+      "fixed_first_action": "SEARCH_KNOWLEDGE",
+      "fixed_acceptable": false,
+      "agent_action": "SEARCH_KNOWLEDGE",
+      "agent_acceptable": false,
+      "reason": "当前案件状态表明存在可疑信息，需进一步确认是否为诈骗",
+      "error": null,
+      "latency_s": 11.99
+    },
+    {
+      "case": "video_claim",
+      "acceptable": [
+        "REVIEW_FORENSICS",
+        "SEARCH_KNOWLEDGE"
+      ],
+      "fixed_first_action": "SEARCH_KNOWLEDGE",
+      "fixed_acceptable": true,
+      "agent_action": "ASK_USER",
+      "agent_acceptable": false,
+      "reason": "通过询问用户以进一步验证视频中的信息的真实性，有助于确定其在案件中的作用和重要性。",
+      "error": null,
+      "latency_s": 14.44
+    },
+    {
+      "case": "audio_unknown",
+      "acceptable": [
+        "ASK_USER"
+      ],
+      "fixed_first_action": "SEARCH_KNOWLEDGE",
+      "fixed_acceptable": false,
+      "agent_action": "SEARCH_KNOWLEDGE",
+      "agent_acceptable": false,
+      "reason": "了解如何评估熟人打电话的风险有助于进一步调查",
+      "error": null,
+      "latency_s": 13.85
+    },
+    {
+      "case": "after_search",
+      "acceptable": [
+        "ASK_USER",
+        "FINISH"
+      ],
+      "fixed_first_action": "SEARCH_KNOWLEDGE",
+      "fixed_acceptable": false,
+      "agent_action": "ASK_USER",
+      "agent_acceptable": true,
+      "reason": "通过询问用户是否已将资金转入所谓的‘安全账户’，可以进一步确认是否存在潜在的风险行为。",
+      "error": null,
+      "latency_s": 15.51
+    }
+  ]
+}

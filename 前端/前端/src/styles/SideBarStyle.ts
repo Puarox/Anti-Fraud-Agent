@@ -1,0 +1,113 @@
+import { makeStyles, tokens } from "@fluentui/react-components";
+
+export const useStyles = makeStyles({
+  sidebarContent: {
+    padding: "16px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "16px",
+    overflowY: "auto",
+  },
+  fieldGroup: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+  },
+  listContainer: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+  },
+  listItem: {
+    display: "flex",
+    gap: "8px",
+    alignItems: "center",
+  },
+  scriptItem: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
+    borderRadius: tokens.borderRadiusMedium,
+    border: "1px solid " + tokens.colorNeutralStroke1,
+    backgroundColor: tokens.colorNeutralBackground1,
+  },
+  scriptInfo: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    textAlign: "left",
+    overflow: "hidden",
+    cursor: "pointer",
+  },
+  scriptName: {
+    fontSize: "15px",
+    fontWeight: tokens.fontWeightSemibold,
+    color: tokens.colorNeutralForeground1,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  scriptSummary: {
+    fontSize: "12px",
+    fontWeight: tokens.fontWeightRegular,
+    color: tokens.colorNeutralForeground3,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  scriptActions: {
+    display: "flex",
+    gap: "4px",
+  },
+  variableMenu: {
+    backgroundColor: tokens.colorNeutralBackground1,
+    border: "1px solid " + tokens.colorNeutralStroke1,
+    borderRadius: tokens.borderRadiusLarge,
+    boxShadow: tokens.shadow16,
+    minWidth: "200px",
+    maxWidth: "300px",
+  },
+  variableMenuHeader: {
+    padding: "8px 12px",
+    fontWeight: 600,
+    display: "flex",
+    gap: "10px",
+    alignItems: "center",
+    borderBottom: "1px solid " + tokens.colorNeutralStroke1,
+    fontSize: "14px",
+  },
+  variableMenuList: {
+    maxHeight: "300px",
+    overflowY: "auto",
+    padding: `${tokens.spacingVerticalSNudge} ${tokens.spacingHorizontalXS}`,
+  },
+  variableMenuItem: {
+    cursor: "pointer",
+    fontSize: "14px",
+    ":hover": {
+      backgroundColor: tokens.colorNeutralBackground1Hover,
+    },
+    padding: "6px 10px",
+    margin: "0 2px",
+    borderRadius: tokens.borderRadiusMedium,
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  },
+  conditionTree: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+    marginBottom: "12px",
+  },
+  conditionRow: {
+    display: "flex",
+    gap: "8px",
+    alignItems: "center",
+    marginBottom: "8px",
+  },
+  cambria: {
+    fontFamily: "Cambria Math, 'Segoe UI', 'Microsoft YaHei', sans-serif",
+  },
+});

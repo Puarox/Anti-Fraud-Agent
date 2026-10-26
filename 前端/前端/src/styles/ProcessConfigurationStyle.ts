@@ -1,0 +1,121 @@
+import { makeStyles, tokens } from "@fluentui/react-components";
+
+export const useStyles = makeStyles({
+  container: {
+    width: "calc(100% + 72px)",
+    height: "calc(100% + 72px)",
+    margin: "-36px",
+    position: "relative",
+    overflow: "hidden",
+  },
+  title: {
+    position: "absolute",
+    top: "36px",
+    left: "36px",
+    width: "calc(100% - 72px)",
+    zIndex: 100,
+    display: "flex",
+    alignItems: "center",
+    gap: tokens.spacingHorizontalS,
+  },
+  saveStatus: {
+    display: "flex",
+    alignItems: "center",
+    gap: tokens.spacingHorizontalSNudge,
+    fontSize: "12px",
+  },
+  contextMenu: {
+    position: "absolute",
+    zIndex: 1000,
+    backgroundColor: tokens.colorNeutralBackground1,
+    border: "1px solid " + tokens.colorNeutralStroke1,
+    borderRadius: tokens.borderRadiusLarge,
+    boxShadow: tokens.shadow16,
+    padding: `${tokens.spacingVerticalSNudge} ${tokens.spacingHorizontalXS}`,
+    minWidth: "160px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "2px",
+  },
+  contextMenuItem: {
+    padding: "6px 10px",
+    margin: "0 2px",
+    borderRadius: tokens.borderRadiusMedium,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    ":hover": {
+      backgroundColor: tokens.colorNeutralBackground1Hover,
+    },
+  },
+  sidebar: {
+    height: "100%",
+    backgroundColor: tokens.colorNeutralBackground1,
+    borderLeft: "1px solid " + tokens.colorNeutralStroke1,
+    position: "absolute",
+    right: 0,
+    top: 0,
+    zIndex: 2000,
+    boxShadow: tokens.shadow16,
+    display: "flex",
+    flexDirection: "column",
+    transitionProperty: "transform, width",
+    transitionDuration: "0.3s",
+    transitionTimingFunction: "ease-in-out",
+    transform: "translateX(100%)", // Default hidden
+    width: "min(350px, 100%)",
+  },
+  sidebarOpen: {
+    transform: "translateX(0)",
+  },
+  scriptSidebar: {
+    height: "100%",
+    backgroundColor: tokens.colorNeutralBackground1,
+    borderLeft: "1px solid " + tokens.colorNeutralStroke1,
+    position: "absolute",
+    right: 0,
+    top: 0,
+    zIndex: 1999,
+    boxShadow: tokens.shadow16,
+    display: "flex",
+    flexDirection: "column",
+    transitionProperty: "transform",
+    transitionDuration: "0.3s",
+    transitionTimingFunction: "ease-in-out",
+    transform: "translateX(100%)",
+    width: "min(1000px, calc(100% - 350px))",
+  },
+  scriptSidebarOpen: {
+    transform: "translateX(-350px)",
+  },
+  sidebarWide: {
+    /* 响应式：最大宽度 1000px，视口较小时会自动缩小 */
+    width: "min(1000px, 100%)",
+  },
+  customNode: {
+    padding: "10px 20px",
+    borderRadius: "8px",
+    border: "2px solid " + tokens.colorBrandBackground,
+    backgroundColor: tokens.colorNeutralBackground1,
+    color: tokens.colorNeutralForeground1,
+    minWidth: "100px",
+    textAlign: "center",
+    position: "relative",
+  },
+  customNodeSelected: {
+    border: "4px solid " + tokens.colorBrandBackground,
+  },
+  flowControls: {
+    "& .react-flow__controls-button": {
+      backgroundColor: tokens.colorNeutralBackground1,
+      borderBottom: "1px solid " + tokens.colorNeutralStroke1,
+      "& svg": {
+        fill: tokens.colorNeutralForeground1,
+      },
+      ":hover": {
+        backgroundColor: tokens.colorNeutralBackground1Hover,
+      },
+    },
+  },
+});
