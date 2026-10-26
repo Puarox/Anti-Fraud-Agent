@@ -49,6 +49,20 @@
       </div>
     </section>
 
+    <section class="tool-directory" aria-labelledby="tool-directory-title">
+      <div class="section-heading"><div><span class="section-index">19</span><h2 id="tool-directory-title">已配置工具与能力</h2></div><span>Agent 工具 × 4 · 自动处理与检索组件 × 15</span></div>
+      <div class="tool-directory-grid">
+        {% for tool in tools %}
+        <article class="directory-card">
+          <div class="directory-card-top"><span class="tool-glyph">{{ '%02d'|format(loop.index) }}</span><span class="tool-kind">{{ tool.kind }}</span></div>
+          <h3>{{ tool.name }}</h3><p>{{ tool.description }}</p>
+          <div class="directory-meta"><span>{{ tool.group }}</span><span>{{ tool.availability }}</span></div>
+        </article>
+        {% endfor %}
+      </div>
+      <p class="tool-directory-note">Agent 可调工具由规划环动态选择；自动前置能力在案件感知阶段运行。AASIST、DFDS 仅提供未校准的实验信号。</p>
+    </section>
+
     <div class="section-heading"><div><span class="section-index">01</span><h2>开始一项调查</h2></div><span>输入文字，或附上截图 / 音频 / 视频</span></div>
     <section class="intake-grid">
       <form id="case-form" class="intake-card" enctype="multipart/form-data">

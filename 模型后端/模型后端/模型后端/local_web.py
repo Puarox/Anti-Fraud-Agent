@@ -25,12 +25,25 @@ _jobs: dict[str, dict] = {}
 _jobs_lock = threading.Lock()
 
 TOOL_CATALOG = [
-    {"name": "本地知识检索", "kind": "RAG", "description": "BM25 + 中文向量召回 + RRF 融合，返回已核对的官方反诈资料。", "availability": "调查时可调用"},
-    {"name": "网址初检", "kind": "核验", "description": "识别精确官方域名与仿冒域名；无实时信誉源时明确返回 UNKNOWN。", "availability": "发现网址时"},
-    {"name": "媒体取证复核", "kind": "多模态", "description": "查看 C2PA 来源、媒体质量、AASIST 语音信号和视频人脸实验信号。", "availability": "有音视频时"},
-    {"name": "用户补充事实", "kind": "交互", "description": "信息不足时暂停调查，追问关键事实后从 Checkpoint 恢复。", "availability": "按需触发"},
-    {"name": "规则风险提示", "kind": "规则", "description": "识别安全账户、验证码、屏幕共享和刷单垫资等高风险行为。", "availability": "录入后自动运行"},
-    {"name": "本地隐私去敏", "kind": "隐私", "description": "手机号、证件号、邮箱等先替换为稳定占位符，再进入检索与规划。", "availability": "录入时自动运行"},
+    {"name": "混合知识检索", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "Agent 根据当前疑点组织检索，再将已核对的反诈知识返回规划环。", "availability": "观察后按需选择"},
+    {"name": "网址域名核验", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "检查线索中实际出现的网址及官方域名；不访问网页，无信誉源时返回 UNKNOWN。", "availability": "发现网址时"},
+    {"name": "媒体取证汇总", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "读取媒体质量、C2PA 来源凭证、AASIST 语音和 DFDS 视频实验信号。", "availability": "案件含媒体时"},
+    {"name": "补问与 Checkpoint 恢复", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "缺少关键事实时暂停并追问；用户补充后保留案件状态继续调查。", "availability": "信息不足时"},
+    {"name": "本地隐私去敏", "kind": "自动前置", "group": "自动感知与预处理", "description": "手机号、证件号、邮箱等先替换为稳定占位符，原始映射留在本机。", "availability": "文本入库前"},
+    {"name": "截图文字 OCR", "kind": "自动前置", "group": "自动感知与预处理", "description": "RapidOCR 从聊天截图及抽样视频帧提取文字、时间戳和画面坐标。", "availability": "图像或视频"},
+    {"name": "二维码内容识别", "kind": "自动前置", "group": "自动感知与预处理", "description": "提取截图或视频帧中的二维码文本，并作为待核验线索去敏保存。", "availability": "图像或视频"},
+    {"name": "人脸预览遮挡", "kind": "自动前置", "group": "自动感知与预处理", "description": "本机检测预览中的人脸并模糊处理；遮挡结果需要用户检查。", "availability": "图像或视频"},
+    {"name": "视频关键帧抽样", "kind": "自动前置", "group": "自动感知与预处理", "description": "按时间间隔抽样视频帧并绑定时间戳，限制时长和帧数。", "availability": "视频证据"},
+    {"name": "离线语音转写", "kind": "自动前置", "group": "自动感知与预处理", "description": "使用本地 Whisper 转写音频；没有本地权重时标记不可用，不上传云端。", "availability": "音频或视频"},
+    {"name": "诈骗行为规则", "kind": "自动前置", "group": "自动感知与预处理", "description": "匹配安全账户、验证码、屏幕共享、刷单垫资等规则并关联证据编号。", "availability": "案件入库时"},
+    {"name": "网址线索提取", "kind": "自动前置", "group": "自动感知与预处理", "description": "从去敏文本、OCR 和语音证据中提取 URL，供 Agent 选择是否核验。", "availability": "有文本证据时"},
+    {"name": "媒体技术质量探测", "kind": "自动前置", "group": "多模态取证信号", "description": "ffprobe 读取时长、编码、分辨率和采样率，辅助判断证据是否足够。", "availability": "有媒体文件时"},
+    {"name": "C2PA 来源凭证检查", "kind": "自动前置", "group": "多模态取证信号", "description": "离线检查媒体内容凭证及校验状态；无凭证不能据此判定伪造。", "availability": "依赖与格式可用时"},
+    {"name": "AASIST 语音伪造信号", "kind": "实验信号", "group": "多模态取证信号", "description": "对音频输出未校准的研究分数，不作为概率或真伪结论。", "availability": "本地权重可用时"},
+    {"name": "DFDS 视频人脸信号", "kind": "实验信号", "group": "多模态取证信号", "description": "对抽样人脸帧输出未校准的实验分数；裁剪流程与训练流程存在差异。", "availability": "视频及权重可用时"},
+    {"name": "BM25 关键词召回", "kind": "RAG 子模块", "group": "RAG 检索子模块", "description": "对经过时效筛选的资料做中文分词和 BM25 词项匹配。", "availability": "知识检索时"},
+    {"name": "BGE 中文向量召回", "kind": "RAG 子模块", "group": "RAG 检索子模块", "description": "本地 BGE-small-zh 语义向量召回；模型缺失时自动退化为 BM25。", "availability": "本地向量权重可用时"},
+    {"name": "查询扩展与 RRF 重排", "kind": "RAG 子模块", "group": "RAG 检索子模块", "description": "按反诈词表扩展查询，融合词法与向量排名，并以 RRF 和关键词加权重排。", "availability": "知识检索时"},
 ]
 
 
