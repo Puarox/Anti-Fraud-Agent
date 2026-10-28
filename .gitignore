@@ -7,3 +7,6 @@
 models/
 .env
 *.log
+
+# Local screenshot contains an absolute workstation model path; do not publish it.
+docs/assets/agent-investigation-trace.png
