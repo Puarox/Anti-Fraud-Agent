@@ -402,9 +402,11 @@ class Investigator:
         previous = self.graph.get_state(config).values
         if previous and previous.get("facts") == manifest["observations"] and previous.get("report"):
             return previous["report"]
+        model_path = getattr(self.planner, "model_path", None)
+        planner_model = Path(str(model_path)).name if model_path else type(self.planner).__name__
         state: InvestigationState = {
             "case_id": case_id,
-            "planner_model": str(getattr(self.planner, "model_path", type(self.planner).__name__)),
+            "planner_model": planner_model,
             "facts": manifest["observations"],
             "rules": manifest["risk_indicators"],
             "forensics": manifest.get("forensics", {}),
