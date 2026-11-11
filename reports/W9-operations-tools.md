@@ -28,12 +28,15 @@ urlscan 官方文档说明扫描提交需要 API key，并允许 `public`、`unl
 
 ### 实时本地守护进程
 
-通过 `python -m jinjing.guardian --watch-dir <路径>` 显式启动。它只轮询这个目录的第一层文件；支持项目已接收的图片、音频和视频扩展名。文件连续两次轮询大小与修改时间不变后，创建案件、运行现有 Agent；高/严重风险会建复核工单。成功文件移入 `_jinjing_processed`，失败文件移入 `_jinjing_failed`。Ctrl+C 停止。
+通过 `python -m jinjing.guardian --watch-dir <路径>` 显式启动。它只轮询这个目录的第一层文件；支持项目已接收的图片、音频和视频扩展名。文件连续两次轮询大小与修改时间不变后，创建案件并运行现有 Agent；是否建立复核工单由 Agent 根据观察和工具能力决定，不在守护进程工作流里固定调用。成功文件移入 `_jinjing_processed`，失败文件移入 `_jinjing_failed`。Ctrl+C 停止。
 
 这不是系统级常驻服务，也不监控剪贴板、浏览器、短信、麦克风或目录之外的数据。文件内容仍留本机。当前依赖文件轮询，目录规模很大时不适合生产环境。
 
 ## Agent 运行时变化
 
+- 工具从手写 `if/elif` 分支改为 `InvestigationTool` 注册表：每个工具单独声明可用条件、执行处理器、副作用和轨迹摘要；执行节点统一分发，支持通过构造器注入自定义工具。
+- 案件录入不再自动调用 RAG 或 URL 核验；输入解析和风险规则保留为必要的确定性前置。Agent 的 SEARCH_KNOWLEDGE 与 CHECK_URL 成为实际按需工具。
+- AIGC/来源/媒体质量取证也移到 `REVIEW_FORENSICS` 工具执行；OCR、ASR 和隐私预处理继续在录入阶段运行，为 Agent 提供基础观察。Agent 可先取证，再按结果决定是否建立复核工单。
 - 可用动作从 9 项扩展到 11 项：本机相关视频检索、建立复核工单加入规划循环。
 - 每轮预算由 6 提高到 8，仍然有界。URL 外送扫描刻意没有注册为 Agent 动作，避免规划器在没有用户确认的情况下发出数据。
 - Web 工具目录现有 28 项能力，其中自动处理组件与 Agent 动作不等价；列表按实际入口区分。
@@ -41,4 +44,4 @@ urlscan 官方文档说明扫描提交需要 API key，并允许 `public`、`unl
 
 ## 检查范围
 
-未运行自动化测试。仅进行 Python 语法编译、JavaScript 语法检查、工具目录与路由的静态审阅、Markdown 链接和 `git diff --check`。外部沙箱需要密钥及用户当次确认；当前没有提交真实案件 URL。守护进程和工单流转也没有宣称生产级验证。
+`python -m unittest discover -s tests` 全部 24 项通过，其中新增 3 项覆盖动态工具注册与派发、未注册动作拒绝、入案时 RAG/URL 不自动执行；既有媒体入案测试也确认 AIGC/来源分析保持待 Agent 调用。另通过 Python 编译、JavaScript 语法、Jinja 模板编译、Markdown 本地链接和 `git diff --check`。外部沙箱需要密钥及用户当次确认；没有提交真实案件 URL。守护进程和工单流转未作生产级验证。

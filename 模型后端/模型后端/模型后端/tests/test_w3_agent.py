@@ -101,7 +101,7 @@ class AgentGraphTest(unittest.TestCase):
     def test_tool_error_is_observed_and_planner_chooses_fallback(self):
         planner = ErrorFallbackPlanner()
         with tempfile.TemporaryDirectory() as directory, \
-                patch("jinjing.agent.get_knowledge") as knowledge:
+                patch("jinjing.retrieval.get_knowledge") as knowledge:
             knowledge.return_value.search.side_effect = RuntimeError("private local traceback")
             with Investigator(planner, Path(directory) / "state.sqlite") as agent:
                 report = agent.run(manifest())

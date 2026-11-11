@@ -12,7 +12,6 @@ from pathlib import Path
 from werkzeug.datastructures import FileStorage
 
 from .media import inspect_image, transcribe_local, video_frames
-from .forensics import inspect_media
 from .privacy import Redactor, assert_redacted
 
 
@@ -48,7 +47,11 @@ def create_case(text: str, upload: FileStorage | None = None) -> dict:
         "media_type": "text",
         "media_sha256": None,
         "observations": [],
+        "url_candidates": [],
+        "url_checks": [],
+        "knowledge": {"mode": "AGENT_ON_DEMAND", "results": []},
         "previews": [],
+        "frame_samples": [],
         "face_redactions": 0,
         "tool_status": {},
         "forensics": {"authenticity": "UNKNOWN", "reason": "no_media"},
@@ -75,6 +78,8 @@ def create_case(text: str, upload: FileStorage | None = None) -> dict:
             manifest["tool_status"]["ocr_qr"] = "DONE"
         elif media_type == "video":
             frames = video_frames(source, case_dir / "raw_frames")
+            manifest["frame_samples"] = [{"file": frame_path.name, "at_ms": at_ms}
+                                           for frame_path, at_ms in frames]
             for index, (frame_path, at_ms) in enumerate(frames):
                 result = inspect_image(frame_path, redactor, case_dir / f"preview_{index:03d}.jpg", at_ms)
                 manifest["observations"].extend(result["observations"])
@@ -96,8 +101,8 @@ def create_case(text: str, upload: FileStorage | None = None) -> dict:
                 manifest["tool_status"]["asr"] = "ERROR"
                 manifest["asr_note"] = str(exc)
 
-        manifest["forensics"] = inspect_media(source, media_type, frames)
-        manifest["tool_status"]["forensics"] = "DONE"
+        manifest["forensics"] = {"authenticity": "UNKNOWN", "reason": "awaiting_agent_tool_selection"}
+        manifest["tool_status"]["forensics"] = "PENDING_AGENT"
 
     return _save_case(manifest, redactor, case_dir)
 
@@ -110,14 +115,11 @@ def _save_case(manifest: dict, redactor: Redactor, case_dir: Path) -> dict:
     from .rules import evaluate_rules
     manifest["risk_indicators"] = evaluate_rules(manifest["observations"])
     combined = " ".join(item.get("text", "") for item in manifest["observations"])
-    if combined.strip():
-        from .retrieval import get_knowledge
-        manifest["knowledge"] = get_knowledge().search(combined[:1000], limit=3)
-    else:
-        manifest["knowledge"] = {"mode": "NO_QUERY", "results": []}
-    from .url_check import check_url
     urls = re.findall(r"https?://[^\s，。；;]+", combined)
-    manifest["url_checks"] = [check_url(url) for url in urls[:5]]
+    manifest["url_candidates"] = list(dict.fromkeys(urls[:5]))
+    # Retrieval and reputation/static URL checks are dispatched only when the Agent chooses them.
+    manifest["knowledge"] = {"mode": "AGENT_ON_DEMAND", "results": []}
+    manifest["url_checks"] = []
     (case_dir / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
     )

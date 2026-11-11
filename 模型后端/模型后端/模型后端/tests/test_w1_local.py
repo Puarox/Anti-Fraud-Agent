@@ -49,6 +49,8 @@ class LocalWorkbenchTest(unittest.TestCase):
             }, content_type="multipart/form-data")
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json["tool_status"]["asr"], "UNAVAILABLE")
+        self.assertEqual(response.json["tool_status"]["forensics"], "PENDING_AGENT")
+        self.assertEqual(response.json["forensics"]["reason"], "awaiting_agent_tool_selection")
 
 
 if __name__ == "__main__":

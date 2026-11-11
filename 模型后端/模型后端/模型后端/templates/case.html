@@ -41,10 +41,10 @@
           {% for hit in d.risk_indicators.hits %}<div class="source-item"><strong>{{ hit.rule_id }}</strong><p>{{ hit.matched_text }} · 证据 {{ hit.evidence_ids|join(', ') }}</p><p>{{ hit.advice }}</p></div>{% else %}<p class="ev-copy">未命中已配置规则。继续结合原始情境核验。</p>{% endfor %}
         </section>
         <section class="panel">
-          <div class="panel-heading"><h2>权威资料</h2><small>{{ d.knowledge.mode }}</small></div>
-          {% for k in d.knowledge.results %}<div class="source-item"><a href="{{ k.source_url }}" target="_blank" rel="noopener noreferrer">{{ k.title }} ↗</a><p>{{ k.summary }}</p><span class="source-meta">{{ k.doc_id }} · 发布 {{ k.published_at }} · 复核 {{ k.reviewed_at }}</span></div>{% else %}<p class="ev-copy">当前没有命中资料。</p>{% endfor %}
+          <div class="panel-heading"><h2>权威资料</h2><small>由 Agent 按需检索</small></div>
+          {% for observation in knowledge_observations %}{% for k in observation.result.results %}<div class="source-item"><a href="{{ k.source_url }}" target="_blank" rel="noopener noreferrer">{{ k.title }} ↗</a><p>{{ k.summary }}</p><span class="source-meta">{{ k.doc_id }} · 发布 {{ k.published_at }} · 复核 {{ k.reviewed_at }}</span></div>{% else %}<p class="ev-copy">Agent 本轮没有命中资料。</p>{% endfor %}{% else %}{% if d.knowledge.results %}<p class="notice">这是旧版案件入库时的检索记录，当前版本不再自动检索。</p>{% for k in d.knowledge.results %}<div class="source-item"><a href="{{ k.source_url }}" target="_blank" rel="noopener noreferrer">{{ k.title }} ↗</a><p>{{ k.summary }}</p><span class="source-meta">{{ k.doc_id }} · 发布 {{ k.published_at }} · 复核 {{ k.reviewed_at }}</span></div>{% endfor %}{% else %}<p class="ev-copy">尚未调用知识检索工具；是否检索由 Agent 根据观察决定。</p>{% endif %}{% endfor %}
         </section>
-        {% if d.url_checks %}<section class="panel"><div class="panel-heading"><h2>网址核验</h2><small>离线规则 · 无实时信誉源</small></div>{% for u in d.url_checks %}<div class="signal-line"><span>{{ u.host or '无效网址' }}</span><strong>{{ u.status }}</strong></div>{% endfor %}</section>{% endif %}
+        {% if url_candidates %}<section class="panel"><div class="panel-heading"><h2>观察到的网址</h2><small>未自动联网核验</small></div>{% for u in url_candidates %}{% set result = namespace(status='待 Agent 核验', preflight='尚未检查') %}{% for observation in url_observations %}{% if observation.result.url == u.url %}{% set result.status = observation.result.status %}{% set result.preflight = observation.result.static_preflight.status %}{% endif %}{% endfor %}<div class="signal-line"><span>{{ u.host or '无效网址' }}</span><strong>{{ result.status }} · {{ result.preflight }}</strong></div>{% endfor %}</section>{% endif %}
         <section class="panel">
           <div class="panel-heading"><h2>媒体真实性信号</h2><small>诈骗行为与媒体伪造分开判断</small></div>
           <p class="signal-note">真实性：{{ d.forensics.authenticity }}。缺少 C2PA 凭证不代表伪造，模型原始分数也不是概率。</p>
@@ -105,8 +105,8 @@
           <button id="create-review-ticket" class="button button-dark" type="button">建立人工复核工单 <b>＋</b></button>
           <button id="find-related-videos" class="button button-dark" type="button" {% if d.media_type != 'video' %}disabled{% endif %}>检索本机相关视频 <b>⌕</b></button>
           <p id="case-tools-status" class="job-status" role="status"></p>
-          {% if d.url_checks %}<div class="source-item"><strong>URL 私有沙箱提交</strong><p>只有点击并确认后，才向 urlscan.io 发送本案已观察到的网址，由其远程浏览器访问目标站；提交前还会检查常见 PII。Private 可见性仍属于第三方处理。</p>
-            {% for u in d.url_checks %}{% if u.url %}<button class="button button-accent url-sandbox-button" type="button" data-url="{{ u.url }}">确认后提交 {{ u.host }} ↗</button>{% endif %}{% endfor %}
+          {% if url_candidates %}<div class="source-item"><strong>URL 私有沙箱提交</strong><p>只有点击并确认后，才向 urlscan.io 发送本案已观察到的网址，由其远程浏览器访问目标站；提交前还会检查常见 PII。Private 可见性仍属于第三方处理。</p>
+            {% for u in url_candidates %}{% if u.url %}<button class="button button-accent url-sandbox-button" type="button" data-url="{{ u.url }}">确认后提交 {{ u.host }} ↗</button>{% endif %}{% endfor %}
           </div>{% endif %}
         </section>
       </div>

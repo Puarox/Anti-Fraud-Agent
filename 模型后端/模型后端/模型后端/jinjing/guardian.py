@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import shutil
 import sys
 import time
@@ -12,7 +13,6 @@ from werkzeug.datastructures import FileStorage
 
 from .agent import Investigator, LocalQwenPlanner
 from .cases import BASE_DIR, EXTENSIONS, create_case
-from .review_queue import create_ticket
 
 
 def run(watch_dir: Path, poll_seconds: float = 2.0) -> None:
@@ -46,12 +46,17 @@ def run(watch_dir: Path, poll_seconds: float = 2.0) -> None:
                         with path.open("rb") as source:
                             manifest = create_case("", FileStorage(stream=source, filename=path.name))
                         report = investigator.run(manifest)
-                        if manifest.get("risk_indicators", {}).get("level") in {"HIGH", "CRITICAL"}:
-                            create_ticket(manifest["case_id"],
-                                          "本地守护进程发现高风险案件，等待人工复核",
-                                          [fact.get("evidence_id") for fact in manifest.get("observations", [])
-                                           if fact.get("evidence_id")],
-                                          "URGENT" if manifest["risk_indicators"]["level"] == "CRITICAL" else "HIGH")
+                        case_dir = BASE_DIR / manifest["case_id"]
+                        (case_dir / "investigation.json").write_text(
+                            json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+                        forensic = next((item.get("result") for item in reversed(report.get("tool_observations", []))
+                                         if item.get("tool") == "REVIEW_FORENSICS" and item.get("result")), None)
+                        if forensic is not None:
+                            manifest["forensics"] = forensic
+                            manifest.setdefault("tool_status", {})["forensics"] = "DONE"
+                        manifest["report_stale"] = False
+                        (case_dir / "manifest.json").write_text(
+                            json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
                         destination = archive / path.name
                         if destination.exists():
                             destination = archive / f"{int(time.time())}_{path.name}"

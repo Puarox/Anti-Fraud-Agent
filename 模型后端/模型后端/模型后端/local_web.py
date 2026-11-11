@@ -11,6 +11,7 @@ from pathlib import Path
 
 from flask import Flask, abort, jsonify, redirect, render_template, request, send_file, url_for
 from werkzeug.datastructures import FileStorage
+from urllib.parse import urlsplit
 
 from jinjing.agent import Investigator, LocalQwenPlanner
 from jinjing.cases import BASE_DIR, add_user_fact, create_case, load_case, preview_path
@@ -33,7 +34,7 @@ TOOL_CATALOG = [
     {"name": "URL 私有沙箱提交", "kind": "用户确认后", "group": "受控外部服务", "description": "用户显式确认后才将 URL 发送 urlscan.io，固定请求 private 可见性；需配置 URLSCAN_API_KEY。", "availability": "必须有明确外送确认"},
     {"name": "分场景止损指引", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "根据疑似转账、凭据泄露和远程控制等线索，提供有官方出处的条件式应对步骤。", "availability": "出现高危线索时"},
     {"name": "报警与银行材料清单", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "把案件已有证据编号和待补信息整理成联系银行或公安机关前的准备清单；不代为提交。", "availability": "需要线下处置时"},
-    {"name": "媒体取证汇总", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "读取媒体质量、C2PA 来源凭证、AASIST 语音和 DFDS 视频实验信号。", "availability": "案件含媒体时"},
+    {"name": "媒体取证汇总", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "Agent 选中后才本机运行媒体质量、C2PA 来源凭证与可用的 AASIST/DFDS 实验信号。", "availability": "案件含媒体且 Agent 选择时"},
     {"name": "补问与 Checkpoint 恢复", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "缺少关键事实时暂停并追问；用户补充后保留案件状态继续调查。", "availability": "信息不足时"},
     {"name": "证据时间线整理", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "按媒体时间戳组织 OCR、ASR 和文本线索；没有时间戳时保留录入顺序并标明未知。", "availability": "有多条证据时"},
     {"name": "关键事实缺口检查", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "检查是否尚未确认转账、验证码/远程控制、联系状态和独立核验，并建议补问。", "availability": "案件事实可用时"},
@@ -204,7 +205,8 @@ def url_sandbox_submit(case_id):
         abort(404)
     data = request.get_json(silent=True) or {}
     url = data.get("url", "")
-    observed_urls = {item.get("url") for item in manifest.get("url_checks", [])}
+    observed_urls = set(manifest.get("url_candidates", [])) | {
+        item.get("url") for item in manifest.get("url_checks", [])}
     if url not in observed_urls:
         return jsonify({"error": "URL must be observed in this case"}), 400
     if data.get("confirm_external_submission") is not True:
@@ -229,7 +231,19 @@ def show_case(case_id):
         abort(404)
     report_file = BASE_DIR / case_id / "investigation.json"
     report = json.loads(report_file.read_text(encoding="utf-8")) if report_file.exists() else None
-    return render_template("case.html", d=data, report=report, tools=TOOL_CATALOG)
+    observations = report.get("tool_observations", []) if report and not data.get("report_stale") else []
+    knowledge_observations = [item for item in observations if item.get("tool") == "SEARCH_KNOWLEDGE"]
+    url_observations = [item for item in observations if item.get("tool") == "CHECK_URL"]
+    url_candidates = []
+    for url in data.get("url_candidates") or [item.get("url", "") for item in data.get("url_checks", [])]:
+        try:
+            host = urlsplit(url).hostname or ""
+        except ValueError:
+            host = ""
+        url_candidates.append({"url": url, "host": host})
+    return render_template("case.html", d=data, report=report, tools=TOOL_CATALOG,
+                           knowledge_observations=knowledge_observations,
+                           url_observations=url_observations, url_candidates=url_candidates)
 
 
 @app.post("/api/cases/<case_id>/investigate")
@@ -259,6 +273,11 @@ def _perform_investigation(case_id: str, job_id: str | None = None) -> dict:
     (BASE_DIR / case_id / "investigation.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
     )
+    forensics = next((item.get("result") for item in reversed(report.get("tool_observations", []))
+                      if item.get("tool") == "REVIEW_FORENSICS" and item.get("result")), None)
+    if forensics is not None:
+        manifest["forensics"] = forensics
+        manifest.setdefault("tool_status", {})["forensics"] = "DONE"
     manifest["report_stale"] = False
     (BASE_DIR / case_id / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
