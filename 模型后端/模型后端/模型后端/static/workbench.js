@@ -3,6 +3,9 @@
     SEARCH_KNOWLEDGE: "检索权威资料",
     CHECK_URL: "核验网址",
     REVIEW_FORENSICS: "复核媒体取证信号",
+    BUILD_EVIDENCE_TIMELINE: "整理证据时间线",
+    CHECK_EVIDENCE_GAPS: "检查关键事实缺口",
+    VERIFY_EVIDENCE_CHAIN: "校验证据链引用",
     ASK_USER: "向用户补问",
     FINISH: "整理调查结果",
   };
