@@ -65,7 +65,7 @@
           </div>
           <div class="panel" style="border:0;border-top:1px solid var(--line);border-radius:0;margin:0">
             {% if report and not d.report_stale %}<div class="signal-line"><span>调查状态</span><strong>{{ report.status }}</strong></div><div class="signal-line"><span>行为风险</span><strong>{{ report.fraud_risk.level }}</strong></div><div class="signal-line"><span>媒体真实性</span><strong>{{ report.media_authenticity.state }}</strong></div>{% set metrics = report.get('metrics', {}) %}{% if metrics %}<div class="signal-line"><span>规划 / 工具调用</span><strong>{{ metrics.get('planner_calls', 0) }} / {{ metrics.get('tool_calls', report.budget_used) }}</strong></div><div class="signal-line"><span>规划 / 工具耗时</span><strong>{{ metrics.get('planner_latency_ms', 0) }} / {{ metrics.get('tool_latency_ms', 0) }} ms</strong></div>{% endif %}<p class="ev-meta">Planner · {{ report.planner_model.replace('\\', '/').rsplit('/', 1)[-1] }}</p>{% if not d.report_stale %}<a class="trace-kind" href="{{ url_for('report_json',case_id=d.case_id) }}">下载可复查 JSON 报告 ↓</a>{% endif %}{% if report.open_question %}<div class="question-box"><b>Agent 补问</b><br>{{ report.open_question }}</div>{% endif %}{% endif %}
-            <form id="investigation-form" method="post" action="{{ url_for('investigate_form',case_id=d.case_id) }}"><button type="submit" class="button button-dark" {% if report and not d.report_stale %}disabled{% endif %}>{{ '调查已完成' if report and not d.report_stale else '启动 Agent 调查' }} <b>→</b></button><p>最多 6 次工具调用；遇到新信息会沿 Checkpoint 续查。</p></form>
+            <form id="investigation-form" method="post" action="{{ url_for('investigate_form',case_id=d.case_id) }}"><button type="submit" class="button button-dark" {% if report and not d.report_stale %}disabled{% endif %}>{{ '调查已完成' if report and not d.report_stale else '启动 Agent 调查' }} <b>→</b></button><p>每轮最多 8 次工具调用；遇到新信息会沿 Checkpoint 续查。</p></form>
             <p id="investigation-status" class="job-status" role="status"></p>
             {% if d.report_stale %}<p class="notice">补充了新事实，当前报告已过期。重新调查会读取新增证据。</p>{% endif %}
           </div>
@@ -100,6 +100,15 @@
         {% endfor %}
         {% endif %}
         <section class="panel"><div class="panel-heading"><h2>补充观察</h2><small>会触发新一轮规划</small></div><form class="reply-form" method="post" action="{{ url_for('reply_form',case_id=d.case_id) }}"><textarea name="text" placeholder="例如：我尚未转账；对方拒绝通过原号码回拨。"></textarea><button class="button button-accent" type="submit">保存新事实 <b>＋</b></button></form></section>
+        <section class="panel">
+          <div class="panel-heading"><h2>处置辅助工具</h2><small>本机队列 · 明确外送边界</small></div>
+          <button id="create-review-ticket" class="button button-dark" type="button">建立人工复核工单 <b>＋</b></button>
+          <button id="find-related-videos" class="button button-dark" type="button" {% if d.media_type != 'video' %}disabled{% endif %}>检索本机相关视频 <b>⌕</b></button>
+          <p id="case-tools-status" class="job-status" role="status"></p>
+          {% if d.url_checks %}<div class="source-item"><strong>URL 私有沙箱提交</strong><p>只有点击并确认后，才向 urlscan.io 发送本案已观察到的网址，由其远程浏览器访问目标站；提交前还会检查常见 PII。Private 可见性仍属于第三方处理。</p>
+            {% for u in d.url_checks %}{% if u.url %}<button class="button button-accent url-sandbox-button" type="button" data-url="{{ u.url }}">确认后提交 {{ u.host }} ↗</button>{% endif %}{% endfor %}
+          </div>{% endif %}
+        </section>
       </div>
     </div>
     <footer class="page-foot"><span>金睛鉴诈 · 本地调查工作台</span><span>媒体伪造分数不构成真伪结论</span></footer>

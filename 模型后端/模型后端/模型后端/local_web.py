@@ -14,6 +14,9 @@ from werkzeug.datastructures import FileStorage
 
 from jinjing.agent import Investigator, LocalQwenPlanner
 from jinjing.cases import BASE_DIR, add_user_fact, create_case, load_case, preview_path
+from jinjing.related_media import find_related_videos
+from jinjing.review_queue import create_ticket, list_tickets, update_ticket
+from jinjing.url_sandbox import submit_urlscan_private
 
 
 app = Flask(__name__)
@@ -26,7 +29,8 @@ _jobs_lock = threading.Lock()
 
 TOOL_CATALOG = [
     {"name": "混合知识检索", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "Agent 根据当前疑点组织检索，再将已核对的反诈知识返回规划环。", "availability": "观察后按需选择"},
-    {"name": "网址域名核验", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "检查线索中实际出现的网址及官方域名；不访问网页，无信誉源时返回 UNKNOWN。", "availability": "发现网址时"},
+    {"name": "网址线索静态预检", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "检查案件中实际出现 URL 的主机、混淆特征和敏感参数；不联网、不访问目标站。", "availability": "发现网址时"},
+    {"name": "URL 私有沙箱提交", "kind": "用户确认后", "group": "受控外部服务", "description": "用户显式确认后才将 URL 发送 urlscan.io，固定请求 private 可见性；需配置 URLSCAN_API_KEY。", "availability": "必须有明确外送确认"},
     {"name": "分场景止损指引", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "根据疑似转账、凭据泄露和远程控制等线索，提供有官方出处的条件式应对步骤。", "availability": "出现高危线索时"},
     {"name": "报警与银行材料清单", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "把案件已有证据编号和待补信息整理成联系银行或公安机关前的准备清单；不代为提交。", "availability": "需要线下处置时"},
     {"name": "媒体取证汇总", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "读取媒体质量、C2PA 来源凭证、AASIST 语音和 DFDS 视频实验信号。", "availability": "案件含媒体时"},
@@ -34,6 +38,9 @@ TOOL_CATALOG = [
     {"name": "证据时间线整理", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "按媒体时间戳组织 OCR、ASR 和文本线索；没有时间戳时保留录入顺序并标明未知。", "availability": "有多条证据时"},
     {"name": "关键事实缺口检查", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "检查是否尚未确认转账、验证码/远程控制、联系状态和独立核验，并建议补问。", "availability": "案件事实可用时"},
     {"name": "证据链引用校验", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "校验规则、知识卡和工具观察中的证据编号是否能对应到已知记录。", "availability": "报告生成前"},
+    {"name": "本地人工复核工单", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "高风险或媒体真实性未明时创建可追踪工单，保存优先级、原因和关联证据；不冒充人工结论。", "availability": "高风险或不确定时"},
+    {"name": "历史相关视频检索", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "在本机历史案件中按文件 SHA-256 与已提取 OCR/ASR 文本找候选相似视频。", "availability": "案件包含视频时"},
+    {"name": "本地实时守护进程", "kind": "本地服务", "group": "持续监测", "description": "命令行显式指定监控目录后，稳定文件自动入案、运行 Agent 并归档；不扫描其他目录。", "availability": "用户主动启动时"},
     {"name": "本地隐私去敏", "kind": "自动前置", "group": "自动感知与预处理", "description": "手机号、证件号、邮箱等先替换为稳定占位符，原始映射留在本机。", "availability": "文本入库前"},
     {"name": "截图文字 OCR", "kind": "自动前置", "group": "自动感知与预处理", "description": "RapidOCR 从聊天截图及抽样视频帧提取文字、时间戳和画面坐标。", "availability": "图像或视频"},
     {"name": "二维码内容识别", "kind": "自动前置", "group": "自动感知与预处理", "description": "提取截图或视频帧中的二维码文本，并作为待核验线索去敏保存。", "availability": "图像或视频"},
@@ -67,7 +74,10 @@ def _close_agent():
 
 @app.get("/")
 def index():
-    return render_template("index.html", tools=TOOL_CATALOG)
+    active_tickets = [ticket for ticket in list_tickets(limit=500)
+                      if ticket["status"] in {"OPEN", "IN_REVIEW"}][:8]
+    return render_template("index.html", tools=TOOL_CATALOG,
+                           review_tickets=active_tickets)
 
 
 def _run_intake_job(job_id: str, text: str, staged: Path | None, filename: str | None) -> None:
@@ -149,6 +159,64 @@ def create_from_api():
 def case_json(case_id):
     try:
         return jsonify(load_case(case_id))
+    except (FileNotFoundError, OSError):
+        abort(404)
+
+
+@app.get("/api/review-tickets")
+def review_ticket_list():
+    return jsonify({"tickets": list_tickets(request.args.get("status"))})
+
+
+@app.post("/api/cases/<case_id>/review-ticket")
+def review_ticket_create(case_id):
+    try:
+        manifest = load_case(case_id)
+    except (FileNotFoundError, OSError):
+        abort(404)
+    data = request.get_json(silent=True) or {}
+    evidence = {item.get("evidence_id") for item in manifest.get("observations", [])}
+    requested = data.get("evidence_ids", [])
+    if not isinstance(requested, list) or any(item not in evidence for item in requested):
+        return jsonify({"error": "Evidence IDs must belong to this case"}), 400
+    ticket = create_ticket(case_id, data.get("reason", "用户请求人工复核"), requested,
+                           data.get("priority", "NORMAL"))
+    return jsonify(ticket), 201
+
+
+@app.patch("/api/review-tickets/<ticket_id>")
+def review_ticket_update(ticket_id):
+    data = request.get_json(silent=True) or {}
+    try:
+        result = update_ticket(ticket_id, data.get("status", ""), data.get("reviewer_note", ""))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    if result is None:
+        abort(404)
+    return jsonify(result)
+
+
+@app.post("/api/cases/<case_id>/url-sandbox")
+def url_sandbox_submit(case_id):
+    try:
+        manifest = load_case(case_id)
+    except (FileNotFoundError, OSError):
+        abort(404)
+    data = request.get_json(silent=True) or {}
+    url = data.get("url", "")
+    observed_urls = {item.get("url") for item in manifest.get("url_checks", [])}
+    if url not in observed_urls:
+        return jsonify({"error": "URL must be observed in this case"}), 400
+    if data.get("confirm_external_submission") is not True:
+        return jsonify({"status": "CONSENT_REQUIRED",
+                        "message": "This sends the URL to urlscan.io for analysis. Confirm explicitly to continue."}), 400
+    return jsonify(submit_urlscan_private(url, explicit_consent=True)), 202
+
+
+@app.get("/api/cases/<case_id>/related-videos")
+def related_videos_api(case_id):
+    try:
+        return jsonify(find_related_videos(case_id))
     except (FileNotFoundError, OSError):
         abort(404)
 

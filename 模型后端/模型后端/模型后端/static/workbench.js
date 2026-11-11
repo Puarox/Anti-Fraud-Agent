@@ -4,6 +4,8 @@
     CHECK_URL: "核验网址",
     GET_RESPONSE_PLAYBOOK: "生成分场景止损指引",
     PREPARE_REPORTING_CHECKLIST: "准备报警与银行材料",
+    FIND_RELATED_VIDEOS: "检索本机相关视频",
+    CREATE_REVIEW_TICKET: "建立人工复核工单",
     REVIEW_FORENSICS: "复核媒体取证信号",
     BUILD_EVIDENCE_TIMELINE: "整理证据时间线",
     CHECK_EVIDENCE_GAPS: "检查关键事实缺口",
@@ -160,4 +162,80 @@
       button.disabled = false;
     }
   });
+
+  const caseToolsStatus = document.querySelector("#case-tools-status");
+  const caseIdMatch = location.pathname.match(/^\/cases\/([0-9a-f-]+)/i);
+  const caseId = caseIdMatch?.[1];
+  const ticketButton = document.querySelector("#create-review-ticket");
+  if (ticketButton && caseId) ticketButton.addEventListener("click", async () => {
+    ticketButton.disabled = true;
+    try {
+      const response = await fetch(`/api/cases/${caseId}/review-ticket`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "用户请求人工复核", priority: "NORMAL" }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "工单建立失败");
+      caseToolsStatus.textContent = `工单 ${result.ticket_id} · ${result.status} · ${result.priority}`;
+    } catch (error) { caseToolsStatus.textContent = error.message; }
+    finally { ticketButton.disabled = false; }
+  });
+
+  const videoButton = document.querySelector("#find-related-videos");
+  if (videoButton && caseId) videoButton.addEventListener("click", async () => {
+    videoButton.disabled = true;
+    try {
+      const response = await fetch(`/api/cases/${caseId}/related-videos`);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "检索失败");
+      caseToolsStatus.textContent = result.matches.length
+        ? `找到 ${result.matches.length} 条本机候选：${result.matches.map((item) => `${item.case_id.slice(0, 8)} (${item.basis})`).join("；")}`
+        : `已扫描 ${result.candidate_videos_scanned} 条本机历史视频，暂未发现相似候选。`;
+    } catch (error) { caseToolsStatus.textContent = error.message; }
+    finally { videoButton.disabled = false; }
+  });
+
+  document.querySelectorAll(".url-sandbox-button").forEach((button) => button.addEventListener("click", async () => {
+    if (!caseId) return;
+    const url = button.dataset.url;
+    const approved = window.confirm(`将完整网址发送给 urlscan.io 做沙箱扫描，并请求 private 可见性。外部服务仍会处理该网址。\n\n${url}\n\n继续？`);
+    if (!approved) return;
+    button.disabled = true;
+    try {
+      const response = await fetch(`/api/cases/${caseId}/url-sandbox`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url, confirm_external_submission: true }),
+      });
+      const result = await response.json();
+      if (!response.ok && result.status !== "NOT_CONFIGURED") throw new Error(result.message || result.error || result.status);
+      caseToolsStatus.textContent = result.status === "SUBMITTED"
+        ? `沙箱任务已提交 (${result.visibility}) · ${result.result_url || result.scan_id}`
+        : `沙箱未提交：${result.status} ${result.note || ""}`;
+    } catch (error) { caseToolsStatus.textContent = error.message; }
+    finally { button.disabled = false; }
+  }));
+
+  document.querySelectorAll(".review-ticket [data-status]").forEach((button) => button.addEventListener("click", async () => {
+    const card = button.closest(".review-ticket");
+    const ticketId = card?.dataset.ticketId;
+    if (!ticketId) return;
+    const reviewerNote = card.querySelector(".review-note")?.value || "";
+    if (button.dataset.status === "RESOLVED" && !reviewerNote.trim()) {
+      window.alert("完成复核前请填写复核意见。");
+      return;
+    }
+    button.disabled = true;
+    try {
+      const response = await fetch(`/api/review-tickets/${ticketId}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: button.dataset.status,
+          reviewer_note: reviewerNote }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "更新工单失败");
+      card.querySelectorAll(".tool-kind")[1].textContent = result.status;
+      if (["RESOLVED", "CLOSED"].includes(result.status)) card.remove();
+    } catch (error) { window.alert(error.message); }
+    finally { button.disabled = false; }
+  }));
 })();

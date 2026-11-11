@@ -19,7 +19,7 @@
       </article>
       {% endfor %}
     </div>
-    <div class="rail-foot"><span class="local-pulse"></span> 所有案件在本机处理</div>
+    <div class="rail-foot"><span class="local-pulse"></span> 默认本机 · 外送需确认</div>
   </aside>
 
   <main class="workspace">
@@ -29,7 +29,7 @@
         <h1>让每一步核验<br><em>都有回执。</em></h1>
         <p>Agent 根据案件线索选择工具，读取真实结果后决定下一步。你可以逐步复查它为何行动、看到了什么。</p>
       </div>
-      <div class="hero-stamp"><div class="stamp-ring"><span>6</span><small>TOOL<br>CALL LIMIT</small></div><p>有限预算 · 只读核验<br>关键事实留痕</p></div>
+      <div class="hero-stamp"><div class="stamp-ring"><span>8</span><small>TOOL<br>CALL LIMIT</small></div><p>有限预算 · 有边界的处置动作<br>关键事实留痕</p></div>
       <div class="hero-watermark">TRACE</div>
     </section>
 
@@ -45,12 +45,27 @@
         <div id="demo-trace" class="trace-list trace-list-compact" aria-live="polite">
           <div class="trace-empty"><span class="empty-spark">✳</span><p>启动后，这里会实时显示</p><small>规划 → 工具调用 → 观察 → 再规划</small></div>
         </div>
-        <div class="trace-bottom"><span>本机 Qwen Planner</span><span class="trace-budget">预算上限 6 次调用</span></div>
+      <div class="trace-bottom"><span>本机 Qwen Planner</span><span class="trace-budget">预算上限 8 次调用</span></div>
+      </div>
+    </section>
+
+    <section class="tool-directory" aria-labelledby="review-queue-title">
+      <div class="section-heading"><div><span class="section-index">{{ review_tickets|length }}</span><h2 id="review-queue-title">待人工复核</h2></div><span>本地工单队列 · 建立工单不等于已完成人工复核</span></div>
+      <div id="review-queue" class="tool-directory-grid">
+        {% for ticket in review_tickets %}
+        <article class="directory-card review-ticket" data-ticket-id="{{ ticket.ticket_id }}">
+          <div class="directory-card-top"><span class="tool-kind">{{ ticket.priority }}</span><span class="tool-kind">{{ ticket.status }}</span></div>
+          <h3><a href="/cases/{{ ticket.case_id }}">案件 {{ ticket.case_id[:8] }} ↗</a></h3>
+          <p>{{ ticket.reason }} · 关联证据 {{ ticket.evidence_ids|join(', ') or '待补充' }}</p>
+          <div class="directory-meta"><span>{{ ticket.created_at }}</span><span class="review-actions"><button type="button" data-status="IN_REVIEW">开始复核</button><button type="button" data-status="RESOLVED">完成复核</button></span></div>
+          <input class="review-note" type="text" maxlength="1000" placeholder="人工复核意见（可选）">
+        </article>
+        {% else %}<p class="ev-copy">当前没有待复核工单。Agent 检出高风险或用户主动请求时会在本机建立。</p>{% endfor %}
       </div>
     </section>
 
     <section class="tool-directory" aria-labelledby="tool-directory-title">
-      <div class="section-heading"><div><span class="section-index">24</span><h2 id="tool-directory-title">已配置工具与能力</h2></div><span>Agent 可调动作 × 9 · 自动处理与检索组件 × 15</span></div>
+      <div class="section-heading"><div><span class="section-index">{{ tools|length }}</span><h2 id="tool-directory-title">已配置工具与能力</h2></div><span>Agent 可调动作 × {{ tools|selectattr('kind','equalto','Agent 可调')|list|length }} · 其余为自动处理、本地服务或经确认的外部适配</span></div>
       <div class="tool-directory-grid">
         {% for tool in tools %}
         <article class="directory-card">
@@ -60,7 +75,7 @@
         </article>
         {% endfor %}
       </div>
-      <p class="tool-directory-note">Agent 可调工具由规划环动态选择；自动前置能力在案件感知阶段运行。AASIST、DFDS 仅提供未校准的实验信号。</p>
+      <p class="tool-directory-note">Agent 可调工具由规划环动态选择；URL 外送沙箱必须经用户确认且采用 private 可见性。守护进程只监控显式指定的本地目录；AASIST、DFDS 仅提供未校准的实验信号。</p>
     </section>
 
     <div class="section-heading"><div><span class="section-index">01</span><h2>开始一项调查</h2></div><span>输入文字，或附上截图 / 音频 / 视频</span></div>
