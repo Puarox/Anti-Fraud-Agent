@@ -27,6 +27,8 @@ _jobs_lock = threading.Lock()
 TOOL_CATALOG = [
     {"name": "混合知识检索", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "Agent 根据当前疑点组织检索，再将已核对的反诈知识返回规划环。", "availability": "观察后按需选择"},
     {"name": "网址域名核验", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "检查线索中实际出现的网址及官方域名；不访问网页，无信誉源时返回 UNKNOWN。", "availability": "发现网址时"},
+    {"name": "分场景止损指引", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "根据疑似转账、凭据泄露和远程控制等线索，提供有官方出处的条件式应对步骤。", "availability": "出现高危线索时"},
+    {"name": "报警与银行材料清单", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "把案件已有证据编号和待补信息整理成联系银行或公安机关前的准备清单；不代为提交。", "availability": "需要线下处置时"},
     {"name": "媒体取证汇总", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "读取媒体质量、C2PA 来源凭证、AASIST 语音和 DFDS 视频实验信号。", "availability": "案件含媒体时"},
     {"name": "补问与 Checkpoint 恢复", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "缺少关键事实时暂停并追问；用户补充后保留案件状态继续调查。", "availability": "信息不足时"},
     {"name": "证据时间线整理", "kind": "Agent 可调", "group": "Agent 可调工具", "description": "按媒体时间戳组织 OCR、ASR 和文本线索；没有时间戳时保留录入顺序并标明未知。", "availability": "有多条证据时"},

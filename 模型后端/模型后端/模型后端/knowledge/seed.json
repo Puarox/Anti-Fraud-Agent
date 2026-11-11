@@ -37,5 +37,31 @@
     "valid_until": null,
     "text": "刷单返利常见过程是下载陌生任务软件、先获得小额返利、随后不断垫资充值，最后以账户异常或任务未完成为由限制提现并索要解冻费。不要向陌生私人账户垫资转账。",
     "keywords": ["刷单", "返利", "垫资", "充值", "提现", "解冻费"]
+  },
+  {
+    "doc_id": "nfra_2025_remote_control_response",
+    "title": "国家金融监督管理总局：屏幕共享诈骗风险提示与处置建议",
+    "source_url": "https://www.nfra.gov.cn/branch/yunnan/view/pages/common/ItemDetail.html?docId=1226950&itemId=1952",
+    "published_at": "2025-09-24",
+    "reviewed_at": "2026-11-11",
+    "source_tier": "official",
+    "region": "CN",
+    "review_status": "SOURCE_VERIFIED",
+    "valid_until": null,
+    "text": "若手机可能被异常控制或账户出现不明交易，应尽快断开网络或关机以阻断远程控制；第一时间通过银行、支付机构官方渠道联系并申请挂失或保护账户；在安全设备修改重要账户密码；保留交易记录和短信等证据，并向公安机关报案。不要使用对方提供的联系方式或链接核验身份。",
+    "keywords": ["屏幕共享", "远程控制", "异常交易", "断网", "挂失", "安全设备", "修改密码", "保存证据"]
+  },
+  {
+    "doc_id": "shanghai_2025_post_scam_response",
+    "title": "上海警方：发现被骗后应该怎么做",
+    "source_url": "https://www.shanghai.gov.cn/nw31406/20250527/ab65c2b8613447a9bcd8535363369efd.html",
+    "published_at": "2025-05-22",
+    "reviewed_at": "2026-11-11",
+    "source_tier": "official",
+    "region": "CN",
+    "review_status": "SOURCE_VERIFIED",
+    "valid_until": null,
+    "text": "发现被骗后停止继续转账并与对方断联，尽快拨打110报警，保留通联记录、聊天记录、涉诈网站和应用等线索；如提供过银行卡密码、验证码或发现资金异常，第一时间通过银行官方渠道联系银行挂失或保护账户。止付和资金追回由银行及公安机关处理，结果不能保证。",
+    "keywords": ["已被骗", "停止转账", "断联", "110", "报警", "保存聊天", "转账回执", "银行挂失", "紧急止付"]
   }
 ]

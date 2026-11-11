@@ -70,6 +70,35 @@
             {% if d.report_stale %}<p class="notice">补充了新事实，当前报告已过期。重新调查会读取新增证据。</p>{% endif %}
           </div>
         </section>
+        {% if report and not d.report_stale %}
+        {% for observation in report.tool_observations %}
+          {% if observation.tool == 'GET_RESPONSE_PLAYBOOK' and observation.result %}
+          <section class="panel">
+            <div class="panel-heading"><h2>分场景止损建议</h2><small>官方公开指引 · 条件式提示</small></div>
+            {% for branch in observation.result.branches %}
+            <div class="source-item"><strong>{{ branch.scenario }}</strong><p>{{ branch.condition }}</p>
+              <ol>{% for step in branch.steps %}<li>{{ step }}</li>{% endfor %}</ol>
+              {% if branch.evidence_ids %}<span class="source-meta">关联线索：{{ branch.evidence_ids|join(', ') }}</span>{% endif %}
+            </div>
+            {% endfor %}
+            <p class="notice">{{ observation.result.notice }}</p>
+            {% for source in observation.result.sources %}<a class="source-meta" href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.agency }}：{{ source.title }} ↗</a><br>{% endfor %}
+          </section>
+          {% elif observation.tool == 'PREPARE_REPORTING_CHECKLIST' and observation.result %}
+          <section class="panel">
+            <div class="panel-heading"><h2>联系银行 / 报警前准备</h2><small>只整理材料，不会代为提交</small></div>
+            <div class="source-item"><strong>本案已有材料</strong>
+              <p>证据：{{ observation.result.available_case_material.evidence|length }} 条；网址主机：{{ observation.result.available_case_material.url_hosts|join(', ') or '暂无' }}</p>
+              {% if observation.result.available_case_material.risk_rule_hits %}<p>规则命中：{% for hit in observation.result.available_case_material.risk_rule_hits %}{{ hit.rule_id }}（{{ hit.evidence_ids|join(', ') }}）{% if not loop.last %}、{% endif %}{% endfor %}</p>{% endif %}
+            </div>
+            <div class="source-item"><strong>需要准备的信息</strong><ul>{% for item in observation.result.details_to_prepare %}<li>{{ item }}</li>{% endfor %}</ul></div>
+            <div class="source-item"><strong>保留原始证据</strong><ul>{% for item in observation.result.preserve_originals %}<li>{{ item }}</li>{% endfor %}</ul></div>
+            <p class="notice">{{ observation.result.notice }}</p>
+            {% for source in observation.result.sources %}<a class="source-meta" href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.agency }}：{{ source.title }} ↗</a><br>{% endfor %}
+          </section>
+          {% endif %}
+        {% endfor %}
+        {% endif %}
         <section class="panel"><div class="panel-heading"><h2>补充观察</h2><small>会触发新一轮规划</small></div><form class="reply-form" method="post" action="{{ url_for('reply_form',case_id=d.case_id) }}"><textarea name="text" placeholder="例如：我尚未转账；对方拒绝通过原号码回拨。"></textarea><button class="button button-accent" type="submit">保存新事实 <b>＋</b></button></form></section>
       </div>
     </div>
